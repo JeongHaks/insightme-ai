@@ -1,39 +1,52 @@
-import Image from "next/image";
-import Header from "@/components/layout/Header"; {/**Header.tsx를 가져오는 코드. */}
-import Hero from "@/components/landing/Hero"; {/**Hero.tsx를 가져오는 코드. */}
-import FeatureSection from "@/components/landing/FeatureSection"; {/**FeatureSection.tsx를 가져오는 코드. */}
-import StartButton from "@/components/common/Button"; {/**Button.tsx를 가져오는 코드. */}
-import Footer from "@/components/layout/Footer"; {/**Footer.tsx를 가져오는 코드. */}
+import Header from "@/components/layout/Header";
+import Hero from "@/components/landing/Hero";
+import FeatureSection from "@/components/landing/FeatureSection";
+import StartButton from "@/components/common/Button";
+import Footer from "@/components/layout/Footer";
+import CharacterSection from "@/components/landing/CharacterSection";
 
-{/**첫 랜딩페이지 만들 컴포넌트 */}
+// ==================== 메인 랜딩 페이지 ====================
 export default function Home() {
   return (
-      <main className="min-h-screen bg-gradient-to-b from-purple-50 to-white px-5 py-6">
-      {/* 모바일 화면 기준 컨테이너 */}
-        <div className="mx-auto max-w-sm rounded-[32px] bg-white px-6 py-7 shadow-xl shadow-purple-100">
-          {/* 상단 로고 */}          
-          {/* 로고 + 서비스명 */}
-          <Header />          
+    // 전체 랜딩페이지 배경 영역
+    <main className="min-h-screen bg-gradient-to-br from-[#eee9ff] via-[#faf8ff] to-[#e8e2ff] px-4 py-1 sm:py-6">
+      {/* 모바일 화면 형태의 메인 컨테이너 */}
+      <div className="relative mx-auto flex min-h-[100svh] w-full max-w-sm flex-col overflow-hidden rounded-[28px] border border-white/75 bg-white/55 px-6 pb-7 pt-6 shadow-[0_28px_90px_rgba(116,91,191,0.18)] backdrop-blur-2xl sm:min-h-[760px]">
+        {/* 배경 장식 효과 */}
+        <div className="pointer-events-none absolute -right-14 top-16 h-32 w-32 rounded-full bg-[#e9e1ff]/70 blur-2xl" />
+        <div className="pointer-events-none absolute -left-14 bottom-36 h-36 w-36 rounded-full bg-[#f0ebff]/80 blur-3xl" />
+        <div className="pointer-events-none absolute right-8 top-32 h-3 w-3 rotate-45 rounded-sm bg-[#b9a9ff]/70" />
+        <div className="pointer-events-none absolute left-12 top-60 h-2.5 w-2.5 rotate-45 rounded-sm bg-[#c7bbff]/75" />
+        <div className="pointer-events-none absolute right-10 top-[340px] h-2.5 w-2.5 rotate-45 rounded-sm bg-[#a996ff]/70" />
 
-          {/* 메인 문구 */}          
-          <Hero />  
+        {/* 상단 헤더 */}
+        <Header />
 
-          {/* 캐릭터 영역 */}
-          <section className="my-10 flex justify-center">
-            <div className="flex h-40 w-40 items-center justify-center rounded-full bg-purple-100 text-7xl">
-              🧸
-            </div>
-          </section>
+        {/* 메인 문구 */}
+        <div className="relative z-10 mt-12">
+          <Hero />
+        </div>
 
-          {/* 기능 안내 카드 */}
+        {/* 메인 캐릭터 */}
+        <div className="relative z-10 mt-6">
+          <CharacterSection />
+        </div>
+
+        {/* 기능 안내 카드 */}
+        <div className="relative z-10">
           <FeatureSection />
+        </div>
 
-          {/* 시작 버튼 */}
+        {/* 시작 버튼 */}
+        <div className="relative z-10 mt-auto">
           <StartButton />
+        </div>
 
-          {/* 하단 안내 */}
+        {/* 하단 안내 */}
+        <div className="relative z-10">
           <Footer />
         </div>
+      </div>
     </main>
   );
 }
