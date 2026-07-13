@@ -1,21 +1,14 @@
+
 export default function Header() {
   return (
-    <header  className="mb-12 flex items-center">
-      {/* 로고 + 서비스명 */}
-      <div className="flex items-center gap-0">
-        <img
-          src="/image/logo.png"
-          alt="InsightMe Logo"
-          className="h-8 w-auto -mr-1"
-        />
-
-        <h1 className="text-2xl font-bold text-purple-600">
-          InsightMe
-        </h1>
-      </div>
-
-      {/* 메뉴 버튼 */}
-      <button className="ml-auto text-3xl leading-none text-gray-700">
+    <header className="relative z-10 flex items-center justify-between">
+      <p className="text-lg font-black tracking-normal text-[#5f46d1]">
+        InsightMe
+      </p>
+      <button
+        aria-label="메뉴"
+        className="flex h-10 w-10 items-center justify-center rounded-2xl text-[#302a45] transition hover:bg-white/45"
+      >
         ☰
       </button>
     </header>
