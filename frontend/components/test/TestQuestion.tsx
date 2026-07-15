@@ -5,12 +5,15 @@ import QuestionHeader from "./QuestionHeader";
 import QuestionCard from "./QuestionCard";
 import QuestionOption from "./QuestionOption";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 // TCI 문항 화면 컴포넌트
 export default function TestQuestion() {
     const router = useRouter();
-
+    // 사용자가 현재 선택한 답변 번호
+    const [selectedOption, setSelectedOption] = useState<number | null>(null);
+    
     // 임시 선택지 데이터
     const options = [
     "혼자만의 시간을 가지며 생각을 정리한다.",
@@ -25,25 +28,32 @@ export default function TestQuestion() {
       {/* 모바일 카드 영역 */}
       <section className="mx-auto min-h-[720px] max-w-sm rounded-[28px] bg-white px-6 py-8 shadow-xl">
         {/* 제목 + 진행률 */}
-        <QuestionHeader current={2} total={7} />
+        <QuestionHeader
+          current={2}
+          total={7}
+          answeredCount={selectedOption !== null ? 1 : 0}
+        />
 
         {/* 임시 문항 영역 */}
         <div className="mt-10">
           <QuestionCard
             questionNumber={1}
+            trait="NS"
             questionText="스트레스를 받을 때 나는 주로 어떻게 하나요?"
             />
         </div>
         
         {/* 선택지 목록 */}
         <div className="mt-8 space-y-3">
-            {options.map((option, index) => (
-                <QuestionOption
-                key={option}
-                text={option}
-                selected={index === 0}
-                />
-            ))}
+          {options.map((option, index) => (
+            <QuestionOption
+              key={option}
+              label={index === 0 ? "A" : "B"}
+              text={option}
+              selected={selectedOption === index}
+              onClick={() => setSelectedOption(index)}
+            />
+          ))}
         </div>
 
         {/* 이전 / 다음 버튼 */}
@@ -61,6 +71,7 @@ export default function TestQuestion() {
         {/* 다음 버튼 */}
         <button
             type="button"
+            onClick={() => router.push("/test/result")}
             className="flex-1 cursor-pointer rounded-2xl bg-violet-600 py-4 text-base font-semibold text-white transition hover:bg-violet-700"
         >
             다음
