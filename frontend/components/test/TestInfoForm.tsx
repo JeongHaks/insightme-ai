@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { createTestAttempt } from "@/lib/api";
 
 /**
  * 기본정보 입력값 타입
@@ -217,15 +218,32 @@ export default function TestInfoForm() {
     profile.mbti !== "";
 
   /**
-   * 다음 버튼 클릭 처리
-   */
-  const handleNext = () => {
-    if (!canStart) {
-      return;
-    }
+ * 다음 버튼 클릭 처리
+ */
+const handleNext = async () => {
+  // 모든 필수 항목이 입력되지 않았으면 종료
+  if (!canStart) {
+    return;
+  }
 
+  try {
+    // 기본 정보를 백엔드에 저장한다.
+    await createTestAttempt({
+      gender: profile.gender,
+      ageGroup: profile.age,
+      jobGroup: profile.job,
+      mbti: profile.mbti,
+    });
+
+    // 저장이 완료되면 다음 화면으로 이동한다.
     router.push("/test/questions");
-  };
+  } catch (error) {
+    console.error(error);
+
+    // 저장 실패 시 사용자에게 알린다.
+    alert("테스트 시작에 실패했습니다.");
+  }
+};
 
   /**
    * 현재 열린 선택 팝업의 설정
