@@ -196,6 +196,8 @@ export default function TestInfoForm() {
   // 현재 열려 있는 선택 팝업
   const [picker, setPicker] = useState<PickerType | null>(null);
 
+  
+
   /**
    * 기본정보 한 항목을 변경하는 함수
    */
@@ -218,32 +220,38 @@ export default function TestInfoForm() {
     profile.mbti !== "";
 
   /**
- * 다음 버튼 클릭 처리
- */
-const handleNext = async () => {
-  // 모든 필수 항목이 입력되지 않았으면 종료
-  if (!canStart) {
-    return;
-  }
+   * 다음 버튼 클릭 처리
+   */
+  const handleNext = async () => {
+    // 모든 필수 항목이 입력되지 않았으면 종료
+    if (!canStart) {
+      return;
+    }
 
-  try {
-    // 기본 정보를 백엔드에 저장한다.
-    await createTestAttempt({
-      gender: profile.gender,
-      ageGroup: profile.age,
-      jobGroup: profile.job,
-      mbti: profile.mbti,
-    });
+    try {
+      // 기본 정보를 백엔드에 저장하고 응답값을 받는다.
+      const result = await createTestAttempt({
+        gender: profile.gender,
+        ageGroup: profile.age,
+        jobGroup: profile.job,
+        mbti: profile.mbti,
+      });
 
-    // 저장이 완료되면 다음 화면으로 이동한다.
-    router.push("/test/questions");
-  } catch (error) {
-    console.error(error);
+      // 답변 저장 시 사용할 테스트 실행 ID를 브라우저에 저장한다.
+      localStorage.setItem("attemptId", result.attemptId);
 
-    // 저장 실패 시 사용자에게 알린다.
-    alert("테스트 시작에 실패했습니다.");
-  }
-};
+      // 결과 화면에서 표시할 사용자의 MBTI를 저장한다.
+      localStorage.setItem("mbti", profile.mbti);
+
+      // 저장이 완료되면 문항 화면으로 이동한다.
+      router.push("/test/questions");
+    } catch (error) {
+      console.error(error);
+
+      // 저장 실패 시 사용자에게 알린다.
+      alert("테스트 시작에 실패했습니다.");
+    }
+  };
 
   /**
    * 현재 열린 선택 팝업의 설정
@@ -293,11 +301,6 @@ const handleNext = async () => {
             >
               <span>InsightMe</span>
             </button>
-
-            {/* 현재 진행 단계 */}
-            <span className="rounded-full bg-white/50 px-3 py-1 text-xs font-black text-[#8B83AA] backdrop-blur-xl">
-              1 / 7
-            </span>
           </header>
 
           {/* 캐릭터와 화면 설명 */}
@@ -412,11 +415,7 @@ const handleNext = async () => {
           {/* 진행률 */}
           <div className="relative z-10 mt-6 flex items-center gap-4">
             <div className="h-1.5 flex-1 rounded-full bg-[#EEEAF8]">
-              {/* 기본정보 단계는 전체 7단계 중 첫 번째 */}
-              <div className="h-1.5 w-[14.28%] rounded-full bg-[#6D55DC]" />
             </div>
-
-            <span className="text-sm font-black text-[#4C426F]">1 / 7</span>
           </div>
         </div>
 

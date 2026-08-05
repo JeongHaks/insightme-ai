@@ -73,3 +73,64 @@ export async function getTestOptions(questionId: number) {
   // JSON 반환
   return response.json();
 }
+
+
+/**
+ * 테스트 답변 저장 API
+ *
+ * 사용자가 선택한 문항 답변을 백엔드로 전송한다.
+ */
+export async function saveTestAnswer(data: {
+  // 기본정보 저장 시 발급받은 테스트 실행 ID
+  attemptId: string;
+
+  // 답변한 문항 ID
+  questionId: number;
+
+  // 사용자가 선택한 답변 코드
+  // 예: A 또는 B
+  selectedOptionCode: "A" | "B";
+}) {
+  // 백엔드의 답변 저장 API를 호출한다.
+  const response = await fetch(`${BASE_URL}/api/test-answers`, {
+    method: "POST",
+
+    headers: {
+      // JSON 데이터를 전송한다고 백엔드에 알려준다.
+      "Content-Type": "application/json",
+    },
+
+    // JavaScript 객체를 JSON 문자열로 변환해서 전송한다.
+    body: JSON.stringify(data),
+  });
+
+  // 응답이 실패하면 오류를 발생시킨다.
+  if (!response.ok) {
+    throw new Error("테스트 답변 저장에 실패했습니다.");
+  }
+}
+
+
+/**
+ * 테스트 최종 결과 계산 API
+ *
+ * 저장된 답변을 기준으로 백엔드에서
+ * NS, HA, RD, SD 점수를 계산하고 결과를 생성한다.
+ */
+export async function calculateTestResult(attemptId: string) {
+  // attemptId를 URL에 넣어 결과 계산 API를 호출한다.
+  const response = await fetch(
+    `${BASE_URL}/api/test-results/${attemptId}`,
+    {
+      method: "POST",
+    }
+  );
+
+  // 결과 계산에 실패하면 오류를 발생시킨다.
+  if (!response.ok) {
+    throw new Error("테스트 결과 계산에 실패했습니다.");
+  }
+
+  // 백엔드가 반환한 결과 JSON을 프론트로 전달한다.
+  return response.json();
+}

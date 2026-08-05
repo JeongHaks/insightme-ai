@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 // 결과 화면에서 사용할 탭 이름 타입
 type ResultTab = "요약" | "직업분석" | "번아웃" | "조직문화";
@@ -22,6 +22,124 @@ export default function TestResult() {
 
   // 현재 선택된 결과 탭
   const [activeTab, setActiveTab] = useState<ResultTab>("요약");
+
+  // 백엔드에서 계산한 테스트 결과를 저장한다.
+  const [result, setResult] = useState<any>(null);
+
+  // 사용자가 기본정보에서 선택한 MBTI
+  const [mbti, setMbti] = useState("");
+
+  /**
+   * 결과 화면이 열리면 localStorage에 저장된 결과를 읽어온다.
+   */
+    useEffect(() => {
+    // 마지막 문항에서 저장한 결과 JSON 문자열을 가져온다.
+    const savedResult = localStorage.getItem("testResult");
+
+    // 저장된 결과가 있으면 객체로 변환해 state에 저장한다.
+    if (savedResult) {
+      setResult(JSON.parse(savedResult));
+    }
+
+    // 기본정보 화면에서 저장한 MBTI를 가져온다.
+    const savedMbti = localStorage.getItem("mbti");
+
+    // 저장된 MBTI가 있으면 state에 저장한다.
+    if (savedMbti) {
+      setMbti(savedMbti);
+    }
+  }, []);
+    
+  // 결과 데이터가 아직 없으면 로딩 화면을 보여준다.
+  if (!result) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#F7F4FF]">
+        <p className="text-sm font-black text-[#6D55DC]">
+          결과를 불러오는 중입니다...
+        </p>
+      </main>
+    );
+  }
+
+  // NS, HA, RD, SD 점수의 총합
+  const totalScore =
+    result.nsScore +
+    result.haScore +
+    result.rdScore +
+    result.sdScore;
+
+  // 전체 10문항 중 점수 답변과 일치한 비율
+  const temperamentRate = Math.round((totalScore / 10) * 100);
+
+  // 기질 유형에 따라 시너지가 좋은 역할 문구를 정한다.
+  const synergyRoles =
+    result.resultType === "신중형 · 안정지향형"
+      ? "운영 담당자 · 품질 관리자 · 데이터 분석가"
+      : result.resultType === "도전형 · 변화추구형"
+        ? "기획자 · 마케터 · 신규사업 담당자"
+        : result.resultType === "공감형 · 관계중심형"
+          ? "상담가 · 교육 담당자 · HR 담당자"
+          : "프로젝트 매니저 · 전문직 · 리더";
+
+  // 기질 유형에 따라 추천 직업 방향을 정한다.
+  const recommendedCareer =
+    result.resultType === "신중형 · 안정지향형"
+      ? "운영 · 품질 · 분석"
+      : result.resultType === "도전형 · 변화추구형"
+        ? "기획 · 마케팅 · 신규사업"
+        : result.resultType === "공감형 · 관계중심형"
+          ? "상담 · 교육 · 인사"
+          : "프로젝트 관리 · 전문직 · 리더십";
+
+  // 기질 유형에 따라 잘 맞는 조직문화 키워드를 정한다.
+  const recommendedCulture =
+    result.resultType === "신중형 · 안정지향형"
+      ? "명확한 기준 · 안정성 · 예측 가능"
+      : result.resultType === "도전형 · 변화추구형"
+        ? "빠른 실행 · 새로운 시도 · 유연성"
+        : result.resultType === "공감형 · 관계중심형"
+          ? "수평적 소통 · 존중 · 협업"
+          : "자율성 · 신뢰 · 책임 중심";
+
+  // 기질 유형에 따라 주의해야 할 번아웃 신호를 정한다.
+  const burnoutWarning =
+    result.resultType === "신중형 · 안정지향형"
+      ? "작은 실수에도 자책이 커지고, 결정을 미루거나 업무 확인을 반복할 수 있습니다."
+      : result.resultType === "도전형 · 변화추구형"
+        ? "반복 업무에 집중력이 떨어지고, 새로운 자극을 찾느라 여러 일을 동시에 벌일 수 있습니다."
+        : result.resultType === "공감형 · 관계중심형"
+          ? "주변 반응에 예민해지고, 부탁을 거절하지 못해 감정적인 피로가 커질 수 있습니다."
+          : "혼자 책임지려는 경향이 강해지고, 도움을 요청하지 않은 채 업무 부담을 쌓을 수 있습니다.";
+
+  // 기질 유형에 따라 도움이 되는 회복 방법을 정한다.
+  const burnoutRecovery =
+    result.resultType === "신중형 · 안정지향형"
+      ? "완벽하게 처리하려는 부담을 줄이고, 우선순위를 정해 작은 단위로 일을 마무리하세요."
+      : result.resultType === "도전형 · 변화추구형"
+        ? "짧은 목표와 새로운 과제를 적절히 섞고, 진행 중인 일을 먼저 정리하는 습관이 필요합니다."
+        : result.resultType === "공감형 · 관계중심형"
+          ? "다른 사람의 감정과 내 책임을 구분하고, 부탁을 거절하거나 도움을 요청하는 연습이 필요합니다."
+          : "혼자 해결하려 하지 말고 중간 피드백을 받고, 업무를 다른 사람과 나누는 것이 도움이 됩니다.";
+
+  // 기질 유형에 따라 선호하는 소통 방식을 정한다.
+  const preferredCommunication =
+    result.resultType === "신중형 · 안정지향형"
+      ? "업무 목적과 기준이 명확하고, 충분한 검토 시간을 주는 소통 방식을 선호합니다."
+      : result.resultType === "도전형 · 변화추구형"
+        ? "핵심을 빠르게 공유하고, 아이디어를 자유롭게 제안할 수 있는 소통 방식을 선호합니다."
+        : result.resultType === "공감형 · 관계중심형"
+          ? "상대의 의견을 존중하고, 감정을 배려하며 피드백을 주고받는 방식을 선호합니다."
+          : "과도한 간섭 없이 목표와 책임을 분명히 공유하는 소통 방식을 선호합니다.";
+
+  // 기질 유형에 따라 피해야 할 조직문화를 정한다.
+  const avoidCulture =
+    result.resultType === "신중형 · 안정지향형"
+      ? "기준이 자주 바뀌고 역할이 모호하며, 즉흥적인 지시가 반복되는 조직은 스트레스를 크게 줄 수 있습니다."
+      : result.resultType === "도전형 · 변화추구형"
+        ? "새로운 제안을 막고 절차만 강조하며, 변화 속도가 지나치게 느린 조직은 답답함을 줄 수 있습니다."
+        : result.resultType === "공감형 · 관계중심형"
+          ? "과도한 경쟁과 감정적인 비난이 반복되고, 구성원 간 신뢰가 낮은 조직은 피하는 것이 좋습니다."
+          : "세세한 통제와 보고가 많고, 자율적인 판단이나 의사결정 권한이 거의 없는 조직은 맞지 않을 수 있습니다.";
 
   return (
     // 전체 결과 화면 배경
@@ -119,21 +237,51 @@ export default function TestResult() {
 
                 <p className="mt-4 text-sm font-bold text-[#4C426F]">
                   <span className="font-black text-[#6D55DC]">MBTI:</span>{" "}
-                  INFJ (옹호자)
+                  {mbti || "미입력"}
                 </p>
 
                 <p className="mt-2 text-sm font-bold text-[#4C426F]">
                   <span className="font-black text-[#6D55DC]">
                     기질 유형:
                   </span>{" "}
-                  안정형 · 분석적 · 신중형
+                  {result.resultType}
                 </p>
 
                 <p className="mt-4 text-sm font-bold leading-7 text-[#7F7895]">
-                  깊이 있는 통찰력과 공감 능력을 가지고 있으며, 신중한
-                  분석과 계획으로 목표를 달성하는 성향입니다.
+                  {result.summaryText}
                 </p>
               </article>
+              
+              {/* 기질별 실제 점수 */}
+              <div className="mt-4 grid grid-cols-4 gap-2">
+                <div className="rounded-xl bg-white/55 px-2 py-3 text-center">
+                  <p className="text-xs font-black text-[#6D55DC]">NS</p>
+                  <p className="mt-1 text-lg font-black text-[#2B2541]">
+                    {result.nsScore}
+                  </p>
+                </div>
+
+                <div className="rounded-xl bg-white/55 px-2 py-3 text-center">
+                  <p className="text-xs font-black text-[#6D55DC]">HA</p>
+                  <p className="mt-1 text-lg font-black text-[#2B2541]">
+                    {result.haScore}
+                  </p>
+                </div>
+
+                <div className="rounded-xl bg-white/55 px-2 py-3 text-center">
+                  <p className="text-xs font-black text-[#6D55DC]">RD</p>
+                  <p className="mt-1 text-lg font-black text-[#2B2541]">
+                    {result.rdScore}
+                  </p>
+                </div>
+
+                <div className="rounded-xl bg-white/55 px-2 py-3 text-center">
+                  <p className="text-xs font-black text-[#6D55DC]">SD</p>
+                  <p className="mt-1 text-lg font-black text-[#2B2541]">
+                    {result.sdScore}
+                  </p>
+                </div>
+              </div>
 
               {/* 결과 요약 카드 영역 */}
               <div className="grid grid-cols-2 gap-3">
@@ -143,12 +291,17 @@ export default function TestResult() {
                     직업 궁합률
                   </p>
 
+                   {/* 계산된 기질 점수 비율 */}
                   <p className="mt-3 text-2xl font-black text-[#2B2541]">
-                    85%
+                    {temperamentRate}%
                   </p>
 
+                  {/* 계산된 퍼센트만큼 진행 바 너비를 표시한다. */}
                   <div className="mt-3 h-2 rounded-full bg-[#EAE5F5]">
-                    <div className="h-2 w-[85%] rounded-full bg-gradient-to-r from-[#5B42F3] to-[#B388FF]" />
+                    <div
+                      style={{ width: `${temperamentRate}%` }}
+                      className="h-2 rounded-full bg-gradient-to-r from-[#5B42F3] to-[#B388FF]"
+                    />
                   </div>
                 </article>
 
@@ -159,11 +312,7 @@ export default function TestResult() {
                   </p>
 
                   <p className="mt-3 text-sm font-black leading-6 text-[#4C426F]">
-                    전략·기획
-                    <br />
-                    상담·코칭
-                    <br />
-                    연구·분석
+                    {recommendedCareer}
                   </p>
                 </article>
 
@@ -174,11 +323,7 @@ export default function TestResult() {
                   </p>
 
                   <p className="mt-3 text-sm font-black leading-6 text-[#4C426F]">
-                    기획자
-                    <br />
-                    컨설턴트
-                    <br />
-                    HRD 전문가
+                    {synergyRoles}
                   </p>
                 </article>
 
@@ -189,11 +334,7 @@ export default function TestResult() {
                   </p>
 
                   <p className="mt-3 text-sm font-black leading-6 text-[#4C426F]">
-                    수평적 소통
-                    <br />
-                    자율과 신뢰
-                    <br />
-                    협업 중심
+                    {recommendedCulture}
                   </p>
                 </article>
               </div>
@@ -206,17 +347,15 @@ export default function TestResult() {
               {/* 대표 결과 카드 */}
               <article className="rounded-[22px] border border-white/75 bg-white/40 p-5 shadow-[0_10px_30px_rgba(116,91,191,0.08)] backdrop-blur-2xl">
                 <p className="text-xs font-black text-[#6D55DC]">
-                  ESTP × 파수꾼
+                  {mbti || "MBTI 미입력"} × {result.resultType}
                 </p>
 
                 <h2 className="mt-2 text-lg font-black leading-7 text-[#2B2541]">
-                  일할 때 강점이 선명해지는 방식
+                  {result.resultType}에게 잘 맞는 일하는 방식
                 </h2>
 
                 <p className="mt-4 text-sm font-bold leading-7 text-[#7F7895]">
-                  구체적인 사실과 현실적인 개선점을 빠르게 찾아내는
-                  능력이 강합니다. 즉각적인 피드백과 실행이 가능한
-                  환경에서 성과가 자연스럽게 올라갑니다.
+                  {result.careerAnalysis}
                 </p>
               </article>
 
@@ -227,8 +366,7 @@ export default function TestResult() {
                 </p>
 
                 <p className="mt-3 text-sm font-black leading-7 text-[#4C426F]">
-                  안정 · 품질 · 예측을 바탕으로 논리적인 기준과 데이터가
-                  분명한 의사결정에 강점이 있습니다.
+                  {result.summaryText}
                 </p>
               </article>
 
@@ -239,9 +377,7 @@ export default function TestResult() {
                 </p>
 
                 <p className="mt-3 text-sm font-black leading-7 text-[#4C426F]">
-                  운영·품질·데이터 검수 분야와 잘 맞으며, 현재 선택한
-                  운영·관리 안에서는 기획·개선·전문성 역할을 우선
-                  탐색해보세요.
+                  {recommendedCareer}
                 </p>
               </article>
             </div>
@@ -257,20 +393,18 @@ export default function TestResult() {
                 </p>
 
                 <h2 className="mt-2 text-lg font-black text-[#2B2541]">
-                  책임을 혼자 감당할 때 지치기 쉬워요
+                  {result.resultType}이(가) 번아웃을 겪기 쉬운 상황
                 </h2>
 
                 <p className="mt-4 text-sm font-bold leading-7 text-[#7F7895]">
-                  맡은 일을 끝까지 책임지려는 성향 때문에 도움을 요청하지
-                  못하고 혼자 해결하려 할 수 있습니다. 기준이 모호하거나
-                  감정 소모가 큰 환경에서는 피로가 빠르게 누적됩니다.
+                  {result.burnoutAnalysis}
                 </p>
               </article>
 
               {/* 번아웃 신호 */}
               <article className="rounded-[20px] border border-white/75 bg-white/35 p-4 backdrop-blur-2xl">
                 <p className="text-xs font-black text-[#6D55DC]">
-                  주의해야 할 신호
+                  {burnoutWarning}
                 </p>
 
                 <p className="mt-3 text-sm font-black leading-7 text-[#4C426F]">
@@ -282,7 +416,7 @@ export default function TestResult() {
               {/* 회복 방법 */}
               <article className="rounded-[20px] border border-white/75 bg-white/35 p-4 backdrop-blur-2xl">
                 <p className="text-xs font-black text-[#6D55DC]">
-                  회복 방법
+                  {burnoutRecovery}
                 </p>
 
                 <p className="mt-3 text-sm font-black leading-7 text-[#4C426F]">
@@ -304,20 +438,18 @@ export default function TestResult() {
                 </p>
 
                 <h2 className="mt-2 text-lg font-black leading-7 text-[#2B2541]">
-                  자율성과 신뢰가 함께 있는 환경
+                  {result.resultType}에게 잘 맞는 조직환경
                 </h2>
 
                 <p className="mt-4 text-sm font-bold leading-7 text-[#7F7895]">
-                  목표와 기준은 분명하지만 세부적인 실행 방식은 개인에게
-                  맡기는 문화와 잘 맞습니다. 의견을 존중하고 충분한
-                  피드백을 주고받을 수 있는 조직에서 강점이 잘 드러납니다.
+                  {result.cultureAnalysis}
                 </p>
               </article>
 
               {/* 선호하는 소통 방식 */}
               <article className="rounded-[20px] border border-white/75 bg-white/35 p-4 backdrop-blur-2xl">
                 <p className="text-xs font-black text-[#6D55DC]">
-                  선호하는 소통 방식
+                  {preferredCommunication}
                 </p>
 
                 <p className="mt-3 text-sm font-black leading-7 text-[#4C426F]">
@@ -330,7 +462,7 @@ export default function TestResult() {
               {/* 피해야 할 조직문화 */}
               <article className="rounded-[20px] border border-white/75 bg-white/35 p-4 backdrop-blur-2xl">
                 <p className="text-xs font-black text-[#6D55DC]">
-                  피해야 할 조직문화
+                  {avoidCulture}
                 </p>
 
                 <p className="mt-3 text-sm font-black leading-7 text-[#4C426F]">
