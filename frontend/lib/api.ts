@@ -134,3 +134,42 @@ export async function calculateTestResult(attemptId: string) {
   // 백엔드가 반환한 결과 JSON을 프론트로 전달한다.
   return response.json();
 }
+
+/**
+ * AI 채팅 메시지 전송
+ * /test/chat 화면에서 사용자가 입력한 질문을 Spring Boot로 보내고, Gemini 답변을 받아오기 위해서야.
+ */
+export async function sendChatMessage(data: {
+  attemptId: string;
+  message: string;
+}) {
+  const response = await fetch(`${BASE_URL}/api/chat/messages`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    throw new Error("AI 채팅 전송에 실패했습니다.");
+  }
+
+  return response.json();
+}
+
+/**
+ * 특정 채팅방의 기존 대화 내역 조회
+ * 사용자가 /test/chat 화면에 다시 들어왔을 때 DB에 저장된 기존 USER/AI 대화를 불러와서 이어서 보여주기 위해
+ */
+export async function getChatHistory(chatRoomId: number) {
+  const response = await fetch(
+    `${BASE_URL}/api/chat/rooms/${chatRoomId}/messages`
+  );
+
+  if (!response.ok) {
+    throw new Error("채팅 내역 조회에 실패했습니다.");
+  }
+
+  return response.json();
+}
