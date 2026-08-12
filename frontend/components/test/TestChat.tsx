@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { getChatHistory, sendChatMessage } from "@/lib/api";
 
 // 채팅 메시지 타입
 type ChatMessage = {
@@ -19,10 +20,17 @@ const quickQuestions = [
 export default function TestChat() {
   const router = useRouter();
 
+  // 현재 사용 중인 채팅방 ID
+  // 첫 메시지를 보내면 백엔드에서 chatRoomId를 받아 저장한다.
+  const [chatRoomId, setChatRoomId] = useState<number | null>(null);
+  // 현재 테스트 진행 ID
+  // 기본정보 입력 후 localStorage에 저장해둔 attemptId를 사용한다.
+  const [attemptId, setAttemptId] = useState<string | null>(null);
+
   // ==================== 상담 시간 ====================
   // 테스트용 10초
   // 실제 1시간으로 변경할 때는 60 * 60 사용
-  const totalTime = 10;
+  const totalTime = 60 * 60;
   const [remainingTime, setRemainingTime] = useState(totalTime);
 
   // ==================== 상담 종료 팝업 상태 ====================
@@ -45,45 +53,73 @@ export default function TestChat() {
   };
 
   // ==================== 메시지 전송 ====================
-  const handleSubmit = (
-    event?: FormEvent<HTMLFormElement>,
-    presetQuestion?: string
-  ) => {
-    event?.preventDefault();
+  const handleSubmit = async (
+  event?: FormEvent<HTMLFormElement>,
+  presetQuestion?: string
+) => {
+  event?.preventDefault();
 
-    // 추천 질문을 눌렀으면 추천 질문을 사용하고,
-    // 직접 입력했으면 입력창의 값을 사용
-    const messageText = presetQuestion ?? inputValue.trim();
+  // 추천 질문을 눌렀으면 추천 질문을 사용하고,
+  // 직접 입력했으면 입력창의 값을 사용
+  const messageText = presetQuestion ?? inputValue.trim();
 
-    // 빈 메시지이거나 상담 시간이 끝났으면 전송하지 않음
-    if (!messageText || remainingTime <= 0) {
-      return;
-    }
+  // 빈 메시지이거나 상담 시간이 끝났으면 전송하지 않음
+  if (!messageText || remainingTime <= 0) {
+    return;
+  }
 
-    // 사용자 메시지를 목록에 추가
+  // 테스트 진행 ID가 없으면 AI 상담을 진행할 수 없음
+  if (!attemptId) {
+    alert("테스트 정보를 찾을 수 없습니다.");
+    return;
+  }
+
+  // 사용자 메시지를 먼저 화면에 표시
+  setMessages((prev) => [
+    ...prev,
+    {
+      role: "user",
+      text: messageText,
+    },
+  ]);
+
+  // 입력창 초기화
+  setInputValue("");
+
+  try {
+    // Spring Boot로 질문을 보내고 Gemini 답변을 받는다.
+    const response = await sendChatMessage({
+      attemptId,
+      message: messageText,
+    });
+
+    // 백엔드에서 반환한 채팅방 ID 저장
+    setChatRoomId(response.chatRoomId);
+
+    // Gemini가 생성한 실제 답변을 화면에 추가
     setMessages((prev) => [
       ...prev,
       {
-        role: "user",
-        text: messageText,
+        role: "ai",
+        text: response.message,
       },
     ]);
+  } catch (error) {
+    console.error("AI 채팅 전송 실패:", error);
 
-    // 입력창 초기화
-    setInputValue("");
+    // 실패했을 경우 사용자에게 안내
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "ai",
+        text: "AI 상담 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+      },
+    ]);
+  }
+};
 
-    // 임시 AI 응답
-    // 나중에 Spring Boot API 응답으로 교체
-    window.setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "ai",
-          text: "좋아요. 검사 결과와 현재 고민을 함께 살펴보면서 구체적으로 정리해볼게요.",
-        },
-      ]);
-    }, 500);
-  };
+  
+  
 
   // ==================== 상담 시간 카운트 ====================
   useEffect(() => {
@@ -107,6 +143,16 @@ export default function TestChat() {
       setIsTimeOver(true);
     }
   }, [remainingTime]);
+
+  // 채팅 질문을 보낼 때 백엔드가 어떤 테스트 결과를 기준으로 상담해야 하는지 attemptId가 필요하기 때문
+  useEffect(() => {
+    // 기본정보 입력 때 저장한 테스트 진행 ID를 가져온다.
+    const savedAttemptId = localStorage.getItem("attemptId");
+
+    if (savedAttemptId) {
+      setAttemptId(savedAttemptId);
+    }
+  }, []);
 
   return (
     // ==================== 전체 AI 상담 화면 ====================
