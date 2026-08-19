@@ -1,5 +1,7 @@
 // 백엔드 서버의 기본 주소
-const BASE_URL = "http://localhost:8080";
+// NEXT_PUBLIC_API_URL 환경변수가 있으면 해당 주소를 사용한다.
+// 환경변수가 없는 로컬 개발에서는 기존 localhost:8080을 사용한다.
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 /**
  * 테스트 시작 API
