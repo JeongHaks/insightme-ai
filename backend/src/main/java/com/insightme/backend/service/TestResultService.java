@@ -94,8 +94,13 @@ public class TestResultService {
             }
         }
 
-        // 계산 결과를 저장할 Entity 생성
-        TestResult result = new TestResult();
+        // 같은 attemptId의 결과가 이미 있으면 기존 결과를 가져오고,
+        // 없으면 새로운 결과 Entity를 생성한다.
+        // 결과 API가 같은 테스트에 대해 여러 번 호출되어도
+        // test_results에 결과가 중복 저장되지 않도록 하기 위해서다.
+                TestResult result = testResultRepository
+                        .findByAttemptId(attemptId)
+                        .orElseGet(TestResult::new);
 
         result.setAttemptId(attemptId);
         result.setNsScore(nsScore);
