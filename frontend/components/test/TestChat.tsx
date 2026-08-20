@@ -39,6 +39,9 @@ export default function TestChat() {
   // ==================== 채팅 입력값 ====================
   const [inputValue, setInputValue] = useState("");
 
+  // ==================== 채팅 답변 로딩 ====================
+  const [isAiTyping, setIsAiTyping] = useState(false);
+
   // ==================== 채팅 메시지 목록 ====================
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -86,6 +89,10 @@ export default function TestChat() {
   // 입력창 초기화
   setInputValue("");
 
+  // 사용자 질문 전송 후 Gemini의 답변을 기다리는 상태로 변경한다.
+  // 이 값이 true인 동안 채팅 화면에 AI의 "•••" 표시를 보여준다.
+  setIsAiTyping(true);
+
   try {
     // Spring Boot로 질문을 보내고 Gemini 답변을 받는다.
     const response = await sendChatMessage({
@@ -115,6 +122,10 @@ export default function TestChat() {
         text: "AI 상담 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
       },
     ]);
+  }finally {
+    // Gemini 답변 성공/실패와 관계없이
+    // AI 답변 대기 상태를 종료한다.
+    setIsAiTyping(false);
   }
 };
 
@@ -251,7 +262,30 @@ export default function TestChat() {
               </div>
             </div>
           ))}
+          {/* ==================== AI 답변 생성 중 표시 ==================== */}
+          {isAiTyping && (
+            <div className="flex justify-start">
+              {/* AI 캐릭터 */}
+              <div className="mr-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#e8e1ff]">
+                🙂
+              </div>
+
+              {/* Gemini가 답변을 생성하는 동안 보여주는 말풍선 */}
+              <div className="flex items-center gap-1 rounded-3xl rounded-bl-md border border-white/65 bg-white/55 px-4 py-3 backdrop-blur-xl">
+                {/* 세 점이 각각 다른 속도로 깜빡이면서 입력 중인 느낌을 준다. */}
+                <span className="animate-pulse text-[#6d55dc]">●</span>
+                <span className="animate-pulse text-[#6d55dc] [animation-delay:150ms]">
+                  ●
+                </span>
+                <span className="animate-pulse text-[#6d55dc] [animation-delay:300ms]">
+                  ●
+                </span>
+              </div>
+            </div>
+          )}
         </section>
+
+        
 
         {/* ==================== 추천 질문 및 입력창 ==================== */}
         <section className="border-t border-white/60 bg-white/35 p-4 backdrop-blur-2xl">
