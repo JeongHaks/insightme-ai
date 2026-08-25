@@ -175,3 +175,44 @@ export async function getChatHistory(chatRoomId: number) {
 
   return response.json();
 }
+
+
+/**
+ * 회원가입 API
+ *
+ * 사용자가 회원가입 화면에서 입력한
+ * 아이디, 비밀번호, 닉네임을 Spring Boot로 전송한다.
+ */
+export async function signup(data: {
+  loginId: string;
+  password: string;
+  nickname: string;
+}) {
+  // 백엔드 회원가입 API를 호출한다.
+  const response = await fetch(`${BASE_URL}/api/users/signup`, {
+    method: "POST",
+
+    headers: {
+      // JSON 형식으로 회원가입 정보를 전송한다.
+      "Content-Type": "application/json",
+    },
+
+    // JavaScript 객체를 JSON 문자열로 변환해서 전송한다.
+    body: JSON.stringify(data),
+  });
+
+  // 회원가입에 실패한 경우
+  if (!response.ok) {
+    // 백엔드에서 전달한 오류 메시지를 가져온다.
+    // 예: "이미 사용 중인 아이디입니다."
+    const errorMessage = await response.text();
+
+    throw new Error(
+      errorMessage || "회원가입에 실패했습니다."
+    );
+  }
+
+  // 회원가입 성공 시
+  // userId, loginId, nickname을 반환한다.
+  return response.json();
+}

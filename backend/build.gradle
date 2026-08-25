@@ -24,6 +24,9 @@ dependencies {
 	// Gemini API 호출용 공식 Java SDK
 	implementation 'com.google.genai:google-genai:1.0.0'
 
+	// BCrypt 의존성 추가 (비밀번호 해싱)
+	implementation 'org.springframework.security:spring-security-crypto'
+
 	compileOnly 'org.projectlombok:lombok'
 	runtimeOnly 'org.postgresql:postgresql'
 	annotationProcessor 'org.projectlombok:lombok'
