@@ -30,7 +30,7 @@ export default function TestChat() {
   // ==================== 상담 시간 ====================
   // 테스트용 10초
   // 실제 1시간으로 변경할 때는 60 * 60 사용
-  const totalTime = 60 * 60;
+  const totalTime = 10;
   const [remainingTime, setRemainingTime] = useState(totalTime);
 
   // ==================== 상담 종료 팝업 상태 ====================
@@ -400,6 +400,8 @@ export default function TestChat() {
               {/* 회원가입 버튼 */}
               <button
                 type="button"
+                // 회원가입 화면으로 이동한다.
+                onClick={() => router.push("/signup")}
                 className="mt-6 w-full rounded-xl bg-[#6d55dc] py-3 font-semibold text-white transition hover:bg-[#5f48c9]"
               >
                 회원가입하고 계속 상담하기

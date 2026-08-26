@@ -6,6 +6,11 @@ import com.insightme.backend.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+// 로그인 요청 DTO
+import com.insightme.backend.dto.LoginRequest;
+
+// 로그인 성공 응답 DTO
+import com.insightme.backend.dto.LoginResponse;
 
 /**
  * 회원 관련 API 요청을 처리하는 Controller
@@ -40,6 +45,31 @@ public class UserController {
             // 서버 오류(500)가 아닌 409 Conflict로 반환한다.
             return ResponseEntity
                     .status(409)
+                    .body(e.getMessage());
+        }
+    }
+
+    /**
+     * 로그인 API
+     *
+     * POST /api/users/login
+     */
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+
+        try {
+            // UserService에서 아이디와 비밀번호를 확인한다.
+            LoginResponse response = userService.login(request);
+
+            // 로그인에 성공하면 회원 정보를 200 OK와 함께 반환한다.
+            return ResponseEntity.ok(response);
+
+        } catch (IllegalArgumentException e) {
+
+            // 아이디가 존재하지 않거나 비밀번호가 틀린 경우
+            // 로그인 실패 응답을 반환한다.
+            return ResponseEntity
+                    .status(401)
                     .body(e.getMessage());
         }
     }

@@ -216,3 +216,47 @@ export async function signup(data: {
   // userId, loginId, nickname을 반환한다.
   return response.json();
 }
+
+
+/**
+ * 로그인 API
+ *
+ * 사용자가 로그인 화면에서 입력한
+ * 아이디와 비밀번호를 Spring Boot로 전송한다.
+ */
+export async function login(data: {
+    loginId: string;
+    password: string;
+  }) {
+
+    // 백엔드 로그인 API를 호출한다.
+    const response = await fetch(`${BASE_URL}/api/users/login`, {
+      method: "POST",
+
+      headers: {
+        // JSON 형식으로 로그인 정보를 전송한다.
+        "Content-Type": "application/json",
+      },
+
+      // 사용자가 입력한 아이디와 비밀번호를
+      // JSON 문자열로 변환해서 백엔드에 전송한다.
+      body: JSON.stringify(data),
+    });
+
+    // 로그인에 실패한 경우
+    if (!response.ok) {
+
+      // 백엔드에서 전달한 오류 메시지를 가져온다.
+      // 예: "아이디 또는 비밀번호가 올바르지 않습니다."
+      const errorMessage = await response.text();
+
+      throw new Error(
+        errorMessage || "로그인에 실패했습니다."
+      );
+    }
+
+    // 로그인 성공 시
+    // 백엔드 LoginResponse의
+    // userId, loginId, nickname을 반환한다.
+    return response.json();
+  }

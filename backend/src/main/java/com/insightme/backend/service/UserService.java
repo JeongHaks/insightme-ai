@@ -11,6 +11,12 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import com.insightme.backend.dto.SignupResponse;
 import com.insightme.backend.entity.User;
 
+// 로그인 요청 데이터를 받기 위한 DTO
+import com.insightme.backend.dto.LoginRequest;
+
+// 로그인 성공 결과를 반환하기 위한 DTO
+import com.insightme.backend.dto.LoginResponse;
+
 import java.time.LocalDateTime;
 
 /**
@@ -83,4 +89,39 @@ public class UserService {
                 savedUser.getNickname()
         );
     }
+
+    /**
+     * 로그인을 처리한다.
+     *
+     * 아이디로 회원 조회 → 비밀번호 확인
+     * → 로그인 성공 정보 반환 순서로 처리한다.
+     */
+    public LoginResponse login(LoginRequest request) {
+
+        // 1. 사용자가 입력한 loginId로 회원을 조회한다.
+        // 해당 아이디의 회원이 없으면 로그인 실패 처리한다.
+        User user = userRepository.findByLoginId(request.getLoginId())
+                .orElseThrow(() ->
+                        new IllegalArgumentException("아이디 또는 비밀번호가 올바르지 않습니다.")
+                );
+
+        // 2. 사용자가 입력한 비밀번호와
+        // DB에 저장되어 있는 BCrypt 비밀번호를 비교한다.
+        boolean passwordMatches =
+                passwordEncoder.matches(request.getPassword(), user.getPassword());
+
+        // 3. 비밀번호가 일치하지 않으면 로그인 실패 처리한다.
+        if (!passwordMatches) {
+            throw new IllegalArgumentException("아이디 또는 비밀번호가 올바르지 않습니다.");
+        }
+
+        // 4. 아이디와 비밀번호가 모두 맞으면
+        // 비밀번호를 제외한 회원정보를 프론트에 반환한다.
+        return new LoginResponse(
+                user.getId(),
+                user.getLoginId(),
+                user.getNickname()
+        );
+    }
+
 }
