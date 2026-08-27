@@ -229,6 +229,20 @@ export default function TestInfoForm() {
     }
 
     try {
+      // ==================== 비회원 식별 ID 준비 ====================
+
+      // 이전에 생성한 비회원 식별 ID가 있는지 확인한다.
+      let guestId = localStorage.getItem("guestId");
+
+      // 처음 이용하는 비회원이라 guestId가 없다면
+      // 브라우저에서 UUID를 새로 생성한다.
+      if (!guestId) {
+        guestId = crypto.randomUUID();
+
+        // 새로고침하거나 새로운 테스트를 진행해도
+        // 같은 비회원으로 식별할 수 있도록 브라우저에 저장한다.
+        localStorage.setItem("guestId", guestId);
+      }
       // 기본 정보를 백엔드에 저장하고 응답값을 받는다.
       const result = await createTestAttempt({
         gender: profile.gender,

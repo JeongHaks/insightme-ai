@@ -24,4 +24,9 @@ public class SignupRequest {
 
     // 서비스에서 사용할 닉네임
     private String nickname;
+
+    // 비회원 상태에서 진행했던 테스트의 고유 ID
+    // 회원가입 시 기존 테스트를 새 회원에게 연결하기 위해 사용한다.
+    // 일반 회원가입이라면 null일 수 있다.
+    private String attemptId;
 }

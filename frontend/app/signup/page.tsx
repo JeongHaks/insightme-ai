@@ -4,6 +4,9 @@ import { useState } from "react";
 // 회원가입 정보를 Spring Boot로 전송하는 API 함수
 import { signup } from "@/lib/api";
 
+// 회원가입 성공 후 로그인 화면으로 이동하기 위해 사용한다.
+import { useRouter } from "next/navigation";
+
 /**
  * 회원가입 화면
  *
@@ -22,6 +25,9 @@ export default function SignupPage() {
 
   // 서비스에서 사용할 닉네임
   const [nickname, setNickname] = useState("");
+  
+  // 페이지 이동을 처리하는 Next.js Router
+  const router = useRouter();
 
   // ==================== 회원가입 처리 ====================
     const handleSignup = async () => {
@@ -34,11 +40,18 @@ export default function SignupPage() {
     }
 
     try {
+        // 비회원으로 테스트를 진행할 때 저장해둔 attemptId를 가져온다.
+        // 테스트 없이 바로 회원가입한 경우에는 null이 될 수 있다.
+        const attemptId = localStorage.getItem("attemptId");
+      
         // 입력한 회원정보를 Spring Boot 회원가입 API로 전송한다.
         const response = await signup({
         loginId: loginId.trim(),
         password,
         nickname: nickname.trim(),
+        // attemptId가 존재하면 백엔드에서
+        // 기존 비회원 테스트를 새 회원에게 연결한다.
+        attemptId: attemptId ?? undefined,
         });
 
         // 회원가입 성공 확인
@@ -46,6 +59,8 @@ export default function SignupPage() {
 
         // 사용자에게 회원가입 완료 안내
         alert("회원가입이 완료되었습니다.");
+        // 회원가입이 완료되면 로그인 화면으로 이동한다.
+        router.push("/login");
 
     } catch (error) {
         console.error("회원가입 실패:", error);

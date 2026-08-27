@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+// 로그인 성공 후 기존 AI 상담 화면으로 이동하기 위해 사용한다.
+import { useRouter } from "next/navigation";
+
 // 로그인 정보를 Spring Boot로 전송하는 API 함수
 import { login } from "@/lib/api";
 
@@ -19,6 +22,9 @@ export default function LoginPage() {
 
   // 사용자가 입력한 비밀번호
   const [password, setPassword] = useState("");
+
+  // 페이지 이동을 처리하는 Next.js Router
+  const router = useRouter(); 
 
   // ==================== 로그인 처리 ====================
   const handleLogin = async () => {
@@ -52,6 +58,7 @@ export default function LoginPage() {
 
       // 사용자에게 로그인 성공 안내
       alert("로그인되었습니다.");
+      router.push("/test/chat");
 
     } catch (error) {
       console.error("로그인 실패:", error);

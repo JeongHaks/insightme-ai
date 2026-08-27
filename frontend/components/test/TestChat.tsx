@@ -2,7 +2,13 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getChatHistory, sendChatMessage } from "@/lib/api";
+// AI 채팅 및 하루 상담시간 관련 API 함수
+import {
+  getChatHistory,
+  sendChatMessage,
+  getChatDailyUsage,
+  addChatDailyUsage,
+} from "@/lib/api";
 
 // 채팅 메시지 타입
 type ChatMessage = {
@@ -27,10 +33,14 @@ export default function TestChat() {
   // 기본정보 입력 후 localStorage에 저장해둔 attemptId를 사용한다.
   const [attemptId, setAttemptId] = useState<string | null>(null);
 
+  // ==================== 로그인 회원 상태 ====================
+  // localStorage에 userId가 있으면 로그인한 회원으로 판단한다.
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
   // ==================== 상담 시간 ====================
   // 테스트용 10초
   // 실제 1시간으로 변경할 때는 60 * 60 사용
-  const totalTime = 10;
+  const totalTime = 30  ;
   const [remainingTime, setRemainingTime] = useState(totalTime);
 
   // ==================== 상담 종료 팝업 상태 ====================
@@ -103,6 +113,13 @@ export default function TestChat() {
     // 백엔드에서 반환한 채팅방 ID 저장
     setChatRoomId(response.chatRoomId);
 
+    // 회원가입/로그인 화면으로 이동하더라도
+    // 기존 채팅방을 다시 찾을 수 있도록 브라우저에도 저장한다.
+    localStorage.setItem(
+      "chatRoomId",
+      String(response.chatRoomId)
+    );
+
     // Gemini가 생성한 실제 답변을 화면에 추가
     setMessages((prev) => [
       ...prev,
@@ -163,6 +180,92 @@ export default function TestChat() {
     if (savedAttemptId) {
       setAttemptId(savedAttemptId);
     }
+
+    // 로그인 성공 시 저장해둔 회원 ID를 확인한다.
+    const savedUserId = localStorage.getItem("userId");
+
+    // userId가 존재하면 로그인한 회원으로 판단한다.
+    setIsLoggedIn(!!savedUserId);
+  }, []);
+
+  // ==================== 기존 채팅 기록 불러오기 ====================
+  useEffect(() => {
+
+    // 이전 AI 상담에서 저장해둔 채팅방 ID를 가져온다.
+    const savedChatRoomId = localStorage.getItem("chatRoomId");
+
+    // 기존 채팅방이 없다면 새 상담이므로
+    // 기본 인사말 화면을 그대로 사용한다.
+    if (!savedChatRoomId) {
+      return;
+    }
+
+    // localStorage 값은 문자열이므로 number 타입으로 변환한다.
+    const roomId = Number(savedChatRoomId);
+
+    // 현재 채팅방 ID 상태에도 기존 채팅방 번호를 저장한다.
+    setChatRoomId(roomId);
+
+    // 기존 상담 기록을 백엔드에서 불러오는 함수
+    const loadChatHistory = async () => {
+      try {
+
+        // 백엔드에서 조회한 기존 대화를
+        const history = await getChatHistory(roomId);
+        // TestChat 화면에서 사용하는 ChatMessage 형태로 변환한다.
+        const restoredMessages: ChatMessage[] = history.map(
+          (item: { role: "USER" | "AI"; message: string }) => ({
+            // 백엔드는 USER / AI로 반환하지만
+            // 프론트 ChatMessage는 user / ai 소문자를 사용한다.
+            role: item.role === "USER" ? "user" : "ai",
+
+            // DB에 저장되어 있던 실제 메시지 내용
+            text: item.message,
+          })
+        );
+
+        // 기존 상담 기록이 있다면
+        // 처음 인사말 대신 DB에서 가져온 실제 대화로 화면을 복원한다.
+        if (restoredMessages.length > 0) {
+          setMessages(restoredMessages);
+        }
+
+      } catch (error) {
+        console.error("기존 채팅 기록 조회 실패:", error);
+      }
+    };
+
+    loadChatHistory();
+
+  }, []);
+
+  // ==================== 오늘 남은 상담시간 조회 ====================
+  useEffect(() => {
+
+    // 브라우저에 저장된 비회원 식별 ID를 가져온다.
+    const guestId = localStorage.getItem("guestId");
+
+    // guestId가 없다면 상담시간을 조회할 수 없으므로 종료한다.
+    if (!guestId) {
+      return;
+    }
+
+    // 백엔드에서 오늘 남은 상담시간을 조회한다.
+    const loadDailyUsage = async () => {
+      try {
+        const usage = await getChatDailyUsage(guestId);
+
+        // 백엔드에서 계산한 실제 남은 시간을
+        // 화면의 타이머 시작시간으로 설정한다.
+        setRemainingTime(usage.remainingSeconds);
+
+      } catch (error) {
+        console.error("상담 사용시간 조회 실패:", error);
+      }
+    };
+
+    loadDailyUsage();
+
   }, []);
 
   return (
@@ -188,7 +291,8 @@ export default function TestChat() {
               <h1 className="font-black">AI 상담</h1>
 
               <p className="text-xs font-semibold text-white/75">
-                오늘 무료 1시간
+                {/* 로그인 상태에 따라 회원 / 비회원을 구분해서 표시한다. */}
+                {isLoggedIn ? "회원 · AI 상담" : "비회원 · 오늘 무료 1시간"}
               </p>
             </div>
 
@@ -336,7 +440,8 @@ export default function TestChat() {
       </section>
 
       {/* ==================== 상담 종료 팝업 ==================== */}
-      {isTimeOver && (
+      {/* 비회원일 때만 회원가입 유도 팝업을 보여준다. */}
+      {isTimeOver && !isLoggedIn && (
         <>
           {/* 팝업 배경 */}
           <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm" />
