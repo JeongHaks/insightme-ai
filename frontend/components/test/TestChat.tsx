@@ -6,8 +6,14 @@ import { useRouter } from "next/navigation";
 import {
   getChatHistory,
   sendChatMessage,
+
+  // 비회원 상담시간 조회 / 저장
   getChatDailyUsage,
   addChatDailyUsage,
+
+  // 회원 상담시간 조회 / 저장
+  getUserChatDailyUsage,
+  addUserChatDailyUsage,
 } from "@/lib/api";
 
 // 채팅 메시지 타입
@@ -40,7 +46,7 @@ export default function TestChat() {
   // ==================== 상담 시간 ====================
   // 테스트용 10초
   // 실제 1시간으로 변경할 때는 60 * 60 사용
-  const totalTime = 30  ;
+  const totalTime = 60 * 60;
   const [remainingTime, setRemainingTime] = useState(totalTime);
 
   // ==================== 상담 종료 팝업 상태 ====================
@@ -165,6 +171,54 @@ export default function TestChat() {
     return () => window.clearInterval(timer);
   }, [remainingTime]);
 
+
+  // ==================== 상담 사용시간 DB 저장 ====================
+  useEffect(() => {
+
+    // 로그인한 회원 ID를 가져온다.
+    const savedUserId = localStorage.getItem("userId");
+
+    // 비회원 식별 ID를 가져온다.
+    const guestId = localStorage.getItem("guestId");
+
+    // 회원도 아니고 비회원 ID도 없다면 저장할 수 없으므로 종료한다.
+    if (!savedUserId && !guestId) {
+      return;
+    }
+
+    // 10초마다 현재 사용자의 상담 사용시간을 DB에 저장한다.
+    const usageTimer = window.setInterval(async () => {
+      try {
+
+        // ==================== 회원 ====================
+        if (savedUserId) {
+
+          // localStorage의 userId는 문자열이므로 숫자로 변환한다.
+          const userId = Number(savedUserId);
+
+          // 회원의 상담 사용시간에 10초를 추가한다.
+          await addUserChatDailyUsage(userId, 10);
+
+          return;
+        }
+
+        // ==================== 비회원 ====================
+        if (guestId) {
+
+          // 기존 비회원 상담 사용시간에 10초를 추가한다.
+          await addChatDailyUsage(guestId, 10);
+        }
+
+      } catch (error) {
+        console.error("상담 사용시간 저장 실패:", error);
+      }
+    }, 10000);
+
+    // 화면을 벗어나면 interval을 제거한다.
+    return () => window.clearInterval(usageTimer);
+
+  }, []);
+
   // ==================== 상담 시간 종료 체크 ====================
   useEffect(() => {
     if (remainingTime === 0) {
@@ -242,21 +296,43 @@ export default function TestChat() {
   // ==================== 오늘 남은 상담시간 조회 ====================
   useEffect(() => {
 
-    // 브라우저에 저장된 비회원 식별 ID를 가져온다.
-    const guestId = localStorage.getItem("guestId");
+    // 로그인한 회원의 ID를 가져온다.
+    const savedUserId = localStorage.getItem("userId");
 
-    // guestId가 없다면 상담시간을 조회할 수 없으므로 종료한다.
-    if (!guestId) {
-      return;
-    }
+    // 비회원 식별 ID를 가져온다.
+    const guestId = localStorage.getItem("guestId");
 
     // 백엔드에서 오늘 남은 상담시간을 조회한다.
     const loadDailyUsage = async () => {
       try {
+
+        // ==================== 회원 ====================
+        // userId가 존재하면 회원이므로
+        // guestId가 아닌 userId 기준의 상담시간을 조회한다.
+        if (savedUserId) {
+
+          // localStorage 값은 문자열이므로 number로 변환한다.
+          const userId = Number(savedUserId);
+
+          // 회원의 오늘 상담 사용시간 조회
+          const usage = await getUserChatDailyUsage(userId);
+
+          // 회원에게 남아있는 시간을 화면 타이머에 적용한다.
+          setRemainingTime(usage.remainingSeconds);
+
+          return;
+        }
+
+        // ==================== 비회원 ====================
+        // 로그인하지 않았고 guestId도 없다면 조회할 수 없으므로 종료한다.
+        if (!guestId) {
+          return;
+        }
+
+        // 기존 비회원 상담시간 조회
         const usage = await getChatDailyUsage(guestId);
 
-        // 백엔드에서 계산한 실제 남은 시간을
-        // 화면의 타이머 시작시간으로 설정한다.
+        // 비회원에게 남아있는 시간을 화면 타이머에 적용한다.
         setRemainingTime(usage.remainingSeconds);
 
       } catch (error) {
@@ -297,9 +373,17 @@ export default function TestChat() {
             </div>
 
             {/* 채팅 아이콘 */}
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15">
-              💬
-            </div>
+            {/* 회원일 때만 홈 버튼 표시 */}
+            {isLoggedIn && (
+              <button
+                type="button"
+                onClick={() => router.push("/")}
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-xl transition hover:bg-white/25"
+                aria-label="홈으로 이동"
+              >
+                🏠
+              </button>
+            )}
           </div>
         </header>
 

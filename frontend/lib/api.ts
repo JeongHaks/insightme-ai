@@ -330,3 +330,70 @@ export async function addChatDailyUsage(
     throw new Error("상담 사용시간 저장에 실패했습니다.");
   }
 }
+
+/**
+ * 회원의 오늘 AI 상담 사용시간을 조회한다.
+ *
+ * 비회원은 guestId를 사용하지만,
+ * 회원은 로그인할 때 저장한 userId를 기준으로 조회한다.
+ *
+ * @param userId 로그인한 회원의 ID
+ */
+export async function getUserChatDailyUsage(userId: number) {
+
+  // 회원 ID를 이용해서 오늘 상담 사용시간을 조회한다.
+  const response = await fetch(
+    `${BASE_URL}/api/chat/usage/user/${userId}`,
+    {
+      method: "GET",
+    }
+  );
+
+  // 조회에 실패하면 오류를 발생시킨다.
+  if (!response.ok) {
+    throw new Error("회원 상담 사용시간 조회에 실패했습니다.");
+  }
+
+  // 예:
+  // {
+  //   usedSeconds: 10,
+  //   remainingSeconds: 20
+  // }
+  return response.json();
+}
+
+
+/**
+ * 회원이 사용한 AI 상담시간을 백엔드에 저장한다.
+ *
+ * @param userId 로그인한 회원의 ID
+ * @param seconds 이번에 추가로 사용한 상담시간(초)
+ */
+export async function addUserChatDailyUsage(
+  userId: number,
+  seconds: number
+) {
+
+  // 회원 상담 사용시간 저장 API를 호출한다.
+  const response = await fetch(
+    `${BASE_URL}/api/chat/usage/user/${userId}`,
+    {
+      method: "POST",
+
+      headers: {
+        "Content-Type": "application/json",
+      },
+
+      // 회원 ID는 URL에 들어가므로
+      // body에는 이번에 사용한 시간만 전달하면 된다.
+      body: JSON.stringify({
+        seconds,
+      }),
+    }
+  );
+
+  // 저장에 실패하면 오류를 발생시킨다.
+  if (!response.ok) {
+    throw new Error("회원 상담 사용시간 저장에 실패했습니다.");
+  }
+}

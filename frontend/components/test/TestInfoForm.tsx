@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createTestAttempt } from "@/lib/api";
 
 /**
@@ -185,6 +185,9 @@ export default function TestInfoForm() {
   // 페이지 이동을 위한 Next.js 라우터
   const router = useRouter();
 
+  // 현재 로그인한 회원인지 저장하는 상태
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
   // 사용자가 입력한 기본정보
   const [profile, setProfile] = useState<Profile>({
     gender: "",
@@ -254,6 +257,9 @@ export default function TestInfoForm() {
       // 답변 저장 시 사용할 테스트 실행 ID를 브라우저에 저장한다.
       localStorage.setItem("attemptId", result.attemptId);
 
+      // 새로운 테스트이므로 이전 테스트의 상담방 ID를 제거한다.
+      localStorage.removeItem("chatRoomId");
+
       // 결과 화면에서 표시할 사용자의 MBTI를 저장한다.
       localStorage.setItem("mbti", profile.mbti);
 
@@ -267,6 +273,15 @@ export default function TestInfoForm() {
     }
   };
 
+  // 화면이 처음 열릴 때 회원 로그인 여부를 확인한다.
+  useEffect(() => {
+    // 로그인 성공 시 저장했던 userId를 가져온다.
+    const savedUserId = localStorage.getItem("userId");
+
+    // userId가 있으면 true(회원), 없으면 false(비회원)
+    setIsLoggedIn(!!savedUserId);
+  }, []);
+  
   /**
    * 현재 열린 선택 팝업의 설정
    */
@@ -315,6 +330,10 @@ export default function TestInfoForm() {
             >
               <span>InsightMe</span>
             </button>
+            {/* 현재 회원 / 비회원 상태 표시 */}
+            <span className="rounded-full bg-white/60 px-3 py-1 text-xs font-black text-[#6D55DC]">
+              {isLoggedIn ? "회원" : "비회원"}
+            </span>
           </header>
 
           {/* 캐릭터와 화면 설명 */}
