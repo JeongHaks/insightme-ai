@@ -5,8 +5,13 @@ import com.insightme.backend.dto.ChatMessageResponse;
 import com.insightme.backend.entity.ChatRoom;
 import com.insightme.backend.entity.TestResult;
 import com.insightme.backend.service.ChatService;
-import com.insightme.backend.entity.TestResult;
 import com.insightme.backend.dto.ChatHistoryResponse;
+// 비회원의 하루 AI 상담 사용시간을 관리하는 Service
+import com.insightme.backend.service.ChatDailyUsageService;
+// 상담시간 조회 결과를 프론트에 반환하는 DTO
+import com.insightme.backend.dto.ChatDailyUsageResponse;
+// 프론트에서 전달한 상담 사용시간을 받는 DTO
+import com.insightme.backend.dto.ChatDailyUsageRequest;
 
 import java.util.List;
 
@@ -25,6 +30,9 @@ public class ChatController {
 
     // 채팅 관련 비즈니스 로직을 처리하는 Service
     private final ChatService chatService;
+
+    // 비회원의 하루 무료 상담 사용시간을 조회하고 관리하는 Service
+    private final ChatDailyUsageService chatDailyUsageService;
 
     /**
      * 사용자의 채팅 질문을 받는다.
@@ -97,5 +105,99 @@ public class ChatController {
 
         // 프론트에 JSON 배열로 반환한다.
         return ResponseEntity.ok(history);
+    }
+
+    /**
+     * 비회원의 오늘 AI 상담 사용시간을 조회한다.
+     *
+     * GET /api/chat/usage/{guestId}
+     */
+    @GetMapping("/usage/{guestId}")
+    public ResponseEntity<ChatDailyUsageResponse> getDailyUsage(
+            @PathVariable String guestId) {
+
+        // 해당 비회원이 오늘 이미 사용한 상담시간을 조회한다.
+        int usedSeconds =
+                chatDailyUsageService.getTodayUsedSeconds(guestId);
+
+        // 하루 무료 상담시간 중 현재 남은 시간을 계산한다.
+        int remainingSeconds =
+                chatDailyUsageService.getTodayRemainingSeconds(guestId);
+
+        // 프론트에 사용시간과 남은시간을 함께 반환한다.
+        ChatDailyUsageResponse response =
+                new ChatDailyUsageResponse(
+                        usedSeconds,
+                        remainingSeconds
+                );
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 비회원이 사용한 AI 상담시간을 저장한다.
+     *
+     * POST /api/chat/usage
+     */
+    @PostMapping("/usage")
+    public ResponseEntity<Void> addDailyUsage(
+            @RequestBody ChatDailyUsageRequest request) {
+
+        // 프론트에서 전달받은 guestId와 사용시간(초)을
+        // 오늘 상담 사용량에 추가한다.
+        chatDailyUsageService.addUsedSeconds(
+                request.getGuestId(),
+                request.getSeconds()
+        );
+
+        // 정상적으로 저장되면 200 OK를 반환한다.
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * 회원의 오늘 AI 상담 사용시간을 조회한다.
+     *
+     * GET /api/chat/usage/user/{userId}
+     */
+    @GetMapping("/usage/user/{userId}")
+    public ResponseEntity<ChatDailyUsageResponse> getUserDailyUsage(
+            @PathVariable Long userId) {
+
+        // 해당 회원이 오늘 이미 사용한 상담시간을 조회한다.
+        int usedSeconds =
+                chatDailyUsageService.getTodayUsedSecondsByUser(userId);
+
+        // 회원에게 제공되는 하루 상담시간 중 남은 시간을 계산한다.
+        int remainingSeconds =
+                chatDailyUsageService.getTodayRemainingSecondsByUser(userId);
+
+        // 프론트에 사용시간과 남은 시간을 반환한다.
+        ChatDailyUsageResponse response =
+                new ChatDailyUsageResponse(
+                        usedSeconds,
+                        remainingSeconds
+                );
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 회원이 사용한 AI 상담시간을 저장한다.
+     *
+     * POST /api/chat/usage/user/{userId}
+     */
+    @PostMapping("/usage/user/{userId}")
+    public ResponseEntity<Void> addUserDailyUsage(
+            @PathVariable Long userId,
+            @RequestBody ChatDailyUsageRequest request) {
+
+        // 해당 회원이 이번에 사용한 상담시간을
+        // 오늘 사용량에 추가한다.
+        chatDailyUsageService.addUsedSecondsByUser(
+                userId,
+                request.getSeconds()
+        );
+
+        return ResponseEntity.ok().build();
     }
 }

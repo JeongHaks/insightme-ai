@@ -25,6 +25,11 @@ public class TestAttempt {
     @Column(name = "attempt_id")
     private UUID attemptId; // 비회원 테스트 진행 건을 위한 고유식별 (UUID)
 
+    // 이 테스트를 진행한 회원의 고유 ID
+    // 비회원 상태에서 진행한 테스트는 아직 회원이 없으므로 null을 허용한다.
+    @Column(name = "user_id")
+    private Long userId;
+
     // 사용자가 선택한 성별
     @Column(name = "gender", nullable = false)
     private String gender;

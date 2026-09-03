@@ -2,7 +2,19 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getChatHistory, sendChatMessage } from "@/lib/api";
+// AI 채팅 및 하루 상담시간 관련 API 함수
+import {
+  getChatHistory,
+  sendChatMessage,
+
+  // 비회원 상담시간 조회 / 저장
+  getChatDailyUsage,
+  addChatDailyUsage,
+
+  // 회원 상담시간 조회 / 저장
+  getUserChatDailyUsage,
+  addUserChatDailyUsage,
+} from "@/lib/api";
 
 // 채팅 메시지 타입
 type ChatMessage = {
@@ -26,6 +38,10 @@ export default function TestChat() {
   // 현재 테스트 진행 ID
   // 기본정보 입력 후 localStorage에 저장해둔 attemptId를 사용한다.
   const [attemptId, setAttemptId] = useState<string | null>(null);
+
+  // ==================== 로그인 회원 상태 ====================
+  // localStorage에 userId가 있으면 로그인한 회원으로 판단한다.
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   // ==================== 상담 시간 ====================
   // 테스트용 10초
@@ -103,6 +119,13 @@ export default function TestChat() {
     // 백엔드에서 반환한 채팅방 ID 저장
     setChatRoomId(response.chatRoomId);
 
+    // 회원가입/로그인 화면으로 이동하더라도
+    // 기존 채팅방을 다시 찾을 수 있도록 브라우저에도 저장한다.
+    localStorage.setItem(
+      "chatRoomId",
+      String(response.chatRoomId)
+    );
+
     // Gemini가 생성한 실제 답변을 화면에 추가
     setMessages((prev) => [
       ...prev,
@@ -148,6 +171,54 @@ export default function TestChat() {
     return () => window.clearInterval(timer);
   }, [remainingTime]);
 
+
+  // ==================== 상담 사용시간 DB 저장 ====================
+  useEffect(() => {
+
+    // 로그인한 회원 ID를 가져온다.
+    const savedUserId = localStorage.getItem("userId");
+
+    // 비회원 식별 ID를 가져온다.
+    const guestId = localStorage.getItem("guestId");
+
+    // 회원도 아니고 비회원 ID도 없다면 저장할 수 없으므로 종료한다.
+    if (!savedUserId && !guestId) {
+      return;
+    }
+
+    // 10초마다 현재 사용자의 상담 사용시간을 DB에 저장한다.
+    const usageTimer = window.setInterval(async () => {
+      try {
+
+        // ==================== 회원 ====================
+        if (savedUserId) {
+
+          // localStorage의 userId는 문자열이므로 숫자로 변환한다.
+          const userId = Number(savedUserId);
+
+          // 회원의 상담 사용시간에 10초를 추가한다.
+          await addUserChatDailyUsage(userId, 10);
+
+          return;
+        }
+
+        // ==================== 비회원 ====================
+        if (guestId) {
+
+          // 기존 비회원 상담 사용시간에 10초를 추가한다.
+          await addChatDailyUsage(guestId, 10);
+        }
+
+      } catch (error) {
+        console.error("상담 사용시간 저장 실패:", error);
+      }
+    }, 10000);
+
+    // 화면을 벗어나면 interval을 제거한다.
+    return () => window.clearInterval(usageTimer);
+
+  }, []);
+
   // ==================== 상담 시간 종료 체크 ====================
   useEffect(() => {
     if (remainingTime === 0) {
@@ -163,6 +234,114 @@ export default function TestChat() {
     if (savedAttemptId) {
       setAttemptId(savedAttemptId);
     }
+
+    // 로그인 성공 시 저장해둔 회원 ID를 확인한다.
+    const savedUserId = localStorage.getItem("userId");
+
+    // userId가 존재하면 로그인한 회원으로 판단한다.
+    setIsLoggedIn(!!savedUserId);
+  }, []);
+
+  // ==================== 기존 채팅 기록 불러오기 ====================
+  useEffect(() => {
+
+    // 이전 AI 상담에서 저장해둔 채팅방 ID를 가져온다.
+    const savedChatRoomId = localStorage.getItem("chatRoomId");
+
+    // 기존 채팅방이 없다면 새 상담이므로
+    // 기본 인사말 화면을 그대로 사용한다.
+    if (!savedChatRoomId) {
+      return;
+    }
+
+    // localStorage 값은 문자열이므로 number 타입으로 변환한다.
+    const roomId = Number(savedChatRoomId);
+
+    // 현재 채팅방 ID 상태에도 기존 채팅방 번호를 저장한다.
+    setChatRoomId(roomId);
+
+    // 기존 상담 기록을 백엔드에서 불러오는 함수
+    const loadChatHistory = async () => {
+      try {
+
+        // 백엔드에서 조회한 기존 대화를
+        const history = await getChatHistory(roomId);
+        // TestChat 화면에서 사용하는 ChatMessage 형태로 변환한다.
+        const restoredMessages: ChatMessage[] = history.map(
+          (item: { role: "USER" | "AI"; message: string }) => ({
+            // 백엔드는 USER / AI로 반환하지만
+            // 프론트 ChatMessage는 user / ai 소문자를 사용한다.
+            role: item.role === "USER" ? "user" : "ai",
+
+            // DB에 저장되어 있던 실제 메시지 내용
+            text: item.message,
+          })
+        );
+
+        // 기존 상담 기록이 있다면
+        // 처음 인사말 대신 DB에서 가져온 실제 대화로 화면을 복원한다.
+        if (restoredMessages.length > 0) {
+          setMessages(restoredMessages);
+        }
+
+      } catch (error) {
+        console.error("기존 채팅 기록 조회 실패:", error);
+      }
+    };
+
+    loadChatHistory();
+
+  }, []);
+
+  // ==================== 오늘 남은 상담시간 조회 ====================
+  useEffect(() => {
+
+    // 로그인한 회원의 ID를 가져온다.
+    const savedUserId = localStorage.getItem("userId");
+
+    // 비회원 식별 ID를 가져온다.
+    const guestId = localStorage.getItem("guestId");
+
+    // 백엔드에서 오늘 남은 상담시간을 조회한다.
+    const loadDailyUsage = async () => {
+      try {
+
+        // ==================== 회원 ====================
+        // userId가 존재하면 회원이므로
+        // guestId가 아닌 userId 기준의 상담시간을 조회한다.
+        if (savedUserId) {
+
+          // localStorage 값은 문자열이므로 number로 변환한다.
+          const userId = Number(savedUserId);
+
+          // 회원의 오늘 상담 사용시간 조회
+          const usage = await getUserChatDailyUsage(userId);
+
+          // 회원에게 남아있는 시간을 화면 타이머에 적용한다.
+          setRemainingTime(usage.remainingSeconds);
+
+          return;
+        }
+
+        // ==================== 비회원 ====================
+        // 로그인하지 않았고 guestId도 없다면 조회할 수 없으므로 종료한다.
+        if (!guestId) {
+          return;
+        }
+
+        // 기존 비회원 상담시간 조회
+        const usage = await getChatDailyUsage(guestId);
+
+        // 비회원에게 남아있는 시간을 화면 타이머에 적용한다.
+        setRemainingTime(usage.remainingSeconds);
+
+      } catch (error) {
+        console.error("상담 사용시간 조회 실패:", error);
+      }
+    };
+
+    loadDailyUsage();
+
   }, []);
 
   return (
@@ -188,14 +367,23 @@ export default function TestChat() {
               <h1 className="font-black">AI 상담</h1>
 
               <p className="text-xs font-semibold text-white/75">
-                오늘 무료 1시간
+                {/* 로그인 상태에 따라 회원 / 비회원을 구분해서 표시한다. */}
+                {isLoggedIn ? "회원 · AI 상담" : "비회원 · 오늘 무료 1시간"}
               </p>
             </div>
 
             {/* 채팅 아이콘 */}
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15">
-              💬
-            </div>
+            {/* 회원일 때만 홈 버튼 표시 */}
+            {isLoggedIn && (
+              <button
+                type="button"
+                onClick={() => router.push("/")}
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-xl transition hover:bg-white/25"
+                aria-label="홈으로 이동"
+              >
+                🏠
+              </button>
+            )}
           </div>
         </header>
 
@@ -336,7 +524,8 @@ export default function TestChat() {
       </section>
 
       {/* ==================== 상담 종료 팝업 ==================== */}
-      {isTimeOver && (
+      {/* 비회원일 때만 회원가입 유도 팝업을 보여준다. */}
+      {isTimeOver && !isLoggedIn && (
         <>
           {/* 팝업 배경 */}
           <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm" />
@@ -400,6 +589,8 @@ export default function TestChat() {
               {/* 회원가입 버튼 */}
               <button
                 type="button"
+                // 회원가입 화면으로 이동한다.
+                onClick={() => router.push("/signup")}
                 className="mt-6 w-full rounded-xl bg-[#6d55dc] py-3 font-semibold text-white transition hover:bg-[#5f48c9]"
               >
                 회원가입하고 계속 상담하기

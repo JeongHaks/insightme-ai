@@ -20,6 +20,9 @@ export default function TestResult() {
   // 페이지 이동을 위한 Next.js 라우터
   const router = useRouter();
 
+  // 현재 로그인한 회원인지 저장하는 상태
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
   // 현재 선택된 결과 탭
   const [activeTab, setActiveTab] = useState<ResultTab>("요약");
 
@@ -48,6 +51,15 @@ export default function TestResult() {
     if (savedMbti) {
       setMbti(savedMbti);
     }
+  }, []);
+
+  // 화면이 처음 열릴 때 회원 로그인 여부를 확인한다.
+  useEffect(() => {
+    // 로그인 성공 시 localStorage에 저장한 userId를 가져온다.
+    const savedUserId = localStorage.getItem("userId");
+
+    // userId가 있으면 회원, 없으면 비회원
+    setIsLoggedIn(!!savedUserId);
   }, []);
     
   // 결과 데이터가 아직 없으면 로딩 화면을 보여준다.
@@ -176,6 +188,13 @@ export default function TestResult() {
             ⋮
           </button>
         </header>
+
+        {/* 현재 회원 / 비회원 상태 표시 */}
+        <div className="relative z-10 mx-5 mb-2 flex justify-end">
+          <span className="rounded-full bg-white/60 px-3 py-1 text-xs font-black text-[#6D55DC]">
+            {isLoggedIn ? "회원" : "비회원"}
+          </span>
+        </div>
 
         {/* AI 안내 카드 */}
         <section className="relative z-10 mx-4 flex min-h-[78px] items-center justify-between overflow-hidden rounded-[22px] border border-white/70 bg-white/35 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] backdrop-blur-2xl">

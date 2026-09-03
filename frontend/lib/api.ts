@@ -175,3 +175,225 @@ export async function getChatHistory(chatRoomId: number) {
 
   return response.json();
 }
+
+
+/**
+ * 회원가입 API
+ *
+ * 사용자가 회원가입 화면에서 입력한
+ * 아이디, 비밀번호, 닉네임을 Spring Boot로 전송한다.
+ */
+export async function signup(data: {
+  loginId: string;
+  password: string;
+  nickname: string;
+  attemptId?: string; // 테스트 없이 가입하는 경우에는 없어도 된다.
+}) {
+  // 백엔드 회원가입 API를 호출한다.
+  const response = await fetch(`${BASE_URL}/api/users/signup`, {
+    method: "POST",
+
+    headers: {
+      // JSON 형식으로 회원가입 정보를 전송한다.
+      "Content-Type": "application/json",
+    },
+
+    // JavaScript 객체를 JSON 문자열로 변환해서 전송한다.
+    body: JSON.stringify(data),
+  });
+
+  // 회원가입에 실패한 경우
+  if (!response.ok) {
+    // 백엔드에서 전달한 오류 메시지를 가져온다.
+    // 예: "이미 사용 중인 아이디입니다."
+    const errorMessage = await response.text();
+
+    throw new Error(
+      errorMessage || "회원가입에 실패했습니다."
+    );
+  }
+
+  // 회원가입 성공 시
+  // userId, loginId, nickname을 반환한다.
+  return response.json();
+}
+
+
+/**
+ * 로그인 API
+ *
+ * 사용자가 로그인 화면에서 입력한
+ * 아이디와 비밀번호를 Spring Boot로 전송한다.
+ */
+export async function login(data: {
+    loginId: string;
+    password: string;
+  }) {
+
+    // 백엔드 로그인 API를 호출한다.
+    const response = await fetch(`${BASE_URL}/api/users/login`, {
+      method: "POST",
+
+      headers: {
+        // JSON 형식으로 로그인 정보를 전송한다.
+        "Content-Type": "application/json",
+      },
+
+      // 사용자가 입력한 아이디와 비밀번호를
+      // JSON 문자열로 변환해서 백엔드에 전송한다.
+      body: JSON.stringify(data),
+    });
+
+    // 로그인에 실패한 경우
+    if (!response.ok) {
+
+      // 백엔드에서 전달한 오류 메시지를 가져온다.
+      // 예: "아이디 또는 비밀번호가 올바르지 않습니다."
+      const errorMessage = await response.text();
+
+      throw new Error(
+        errorMessage || "로그인에 실패했습니다."
+      );
+    }
+
+    // 로그인 성공 시
+    // 백엔드 LoginResponse의
+    // userId, loginId, nickname을 반환한다.
+    return response.json();
+  }
+
+  /**
+ * 비회원의 오늘 AI 상담 사용시간을 조회한다.
+ *
+ * 백엔드에서:
+ * - 오늘 사용한 시간
+ * - 오늘 남은 시간
+ *
+ * 을 초 단위로 받아온다.
+ */
+export async function getChatDailyUsage(guestId: string) {
+
+  // guestId를 이용해서 오늘 상담 사용시간을 조회한다.
+  const response = await fetch(
+    `${BASE_URL}/api/chat/usage/${guestId}`,
+    {
+      method: "GET",
+    }
+  );
+
+  // 조회에 실패하면 오류를 발생시킨다.
+  if (!response.ok) {
+    throw new Error("상담 사용시간 조회에 실패했습니다.");
+  }
+
+  // 예:
+  // {
+  //   usedSeconds: 10,
+  //   remainingSeconds: 3590
+  // }
+  return response.json();
+}
+
+
+/**
+ * 비회원이 사용한 AI 상담시간을 백엔드에 저장한다.
+ *
+ * @param guestId 비회원 식별 ID
+ * @param seconds 이번에 추가로 사용한 상담시간(초)
+ */
+export async function addChatDailyUsage(
+  guestId: string,
+  seconds: number
+) {
+
+  // 상담 사용시간 저장 API를 호출한다.
+  const response = await fetch(`${BASE_URL}/api/chat/usage`, {
+    method: "POST",
+
+    headers: {
+      "Content-Type": "application/json",
+    },
+
+    // 예:
+    // {
+    //   guestId: "...",
+    //   seconds: 1
+    // }
+    body: JSON.stringify({
+      guestId,
+      seconds,
+    }),
+  });
+
+  // 저장에 실패하면 오류를 발생시킨다.
+  if (!response.ok) {
+    throw new Error("상담 사용시간 저장에 실패했습니다.");
+  }
+}
+
+/**
+ * 회원의 오늘 AI 상담 사용시간을 조회한다.
+ *
+ * 비회원은 guestId를 사용하지만,
+ * 회원은 로그인할 때 저장한 userId를 기준으로 조회한다.
+ *
+ * @param userId 로그인한 회원의 ID
+ */
+export async function getUserChatDailyUsage(userId: number) {
+
+  // 회원 ID를 이용해서 오늘 상담 사용시간을 조회한다.
+  const response = await fetch(
+    `${BASE_URL}/api/chat/usage/user/${userId}`,
+    {
+      method: "GET",
+    }
+  );
+
+  // 조회에 실패하면 오류를 발생시킨다.
+  if (!response.ok) {
+    throw new Error("회원 상담 사용시간 조회에 실패했습니다.");
+  }
+
+  // 예:
+  // {
+  //   usedSeconds: 10,
+  //   remainingSeconds: 20
+  // }
+  return response.json();
+}
+
+
+/**
+ * 회원이 사용한 AI 상담시간을 백엔드에 저장한다.
+ *
+ * @param userId 로그인한 회원의 ID
+ * @param seconds 이번에 추가로 사용한 상담시간(초)
+ */
+export async function addUserChatDailyUsage(
+  userId: number,
+  seconds: number
+) {
+
+  // 회원 상담 사용시간 저장 API를 호출한다.
+  const response = await fetch(
+    `${BASE_URL}/api/chat/usage/user/${userId}`,
+    {
+      method: "POST",
+
+      headers: {
+        "Content-Type": "application/json",
+      },
+
+      // 회원 ID는 URL에 들어가므로
+      // body에는 이번에 사용한 시간만 전달하면 된다.
+      body: JSON.stringify({
+        seconds,
+      }),
+    }
+  );
+
+  // 저장에 실패하면 오류를 발생시킨다.
+  if (!response.ok) {
+    throw new Error("회원 상담 사용시간 저장에 실패했습니다.");
+  }
+}

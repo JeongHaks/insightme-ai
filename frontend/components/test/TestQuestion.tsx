@@ -78,6 +78,9 @@ export default function TestQuestion() {
   // 기본정보 저장 후 localStorage에 보관한 테스트 실행 ID
   const [attemptId, setAttemptId] = useState<string | null>(null);
 
+  // 현재 로그인한 회원인지 저장하는 상태
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
   /**
    * 화면이 처음 열릴 때 백엔드에서 테스트 문항을 조회한다.
    */
@@ -150,8 +153,14 @@ useEffect(() => {
 useEffect(() => {
   const savedAttemptId = localStorage.getItem("attemptId");
 
+  // 로그인한 회원의 ID를 가져온다.
+  const savedUserId = localStorage.getItem("userId");
+
   // 저장된 테스트 실행 ID를 state에 보관한다.
   setAttemptId(savedAttemptId);
+
+  // userId가 있으면 회원, 없으면 비회원으로 처리한다.
+  setIsLoggedIn(!!savedUserId);
 }, []);
 
   
@@ -160,6 +169,12 @@ useEffect(() => {
     <main className="min-h-screen bg-[#F7F4FF] px-4 py-5">
       {/* 모바일 카드 영역 */}
       <section className="mx-auto min-h-[720px] max-w-sm rounded-[28px] bg-white px-6 py-8 shadow-xl">
+        {/* 현재 회원 / 비회원 상태 표시 */}
+        <div className="mb-4 flex justify-end">
+          <span className="rounded-full bg-violet-50 px-3 py-1 text-xs font-bold text-violet-600">
+            {isLoggedIn ? "회원" : "비회원"}
+          </span>
+        </div>
         {/* 제목과 진행률 */}
         <QuestionHeader
           // 배열은 0부터 시작하므로 화면 번호는 1을 더한다.
