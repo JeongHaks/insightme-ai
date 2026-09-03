@@ -29,8 +29,13 @@ public class ChatDailyUsage {
 
     // 비회원 브라우저를 식별하는 UUID
     // 같은 사람이 새 테스트를 진행해도 guestId는 유지된다.
-    @Column(name = "guest_id", nullable = false)
+    @Column(name = "guest_id")
     private UUID guestId;
+
+    // 회원일 때 사용하는 사용자 ID
+    // 비회원 사용시간 데이터에서는 userId가 없을 수 있다.
+    @Column(name = "user_id")
+    private Long userId;
 
     // 상담시간을 사용한 날짜
     // 날짜가 바뀌면 새로운 하루 사용량으로 관리한다.
@@ -40,4 +45,6 @@ public class ChatDailyUsage {
     // 해당 날짜에 사용한 총 상담시간(초)
     @Column(name = "used_seconds", nullable = false)
     private Integer usedSeconds;
+
+
 }

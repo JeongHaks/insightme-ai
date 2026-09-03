@@ -153,4 +153,51 @@ public class ChatController {
         // 정상적으로 저장되면 200 OK를 반환한다.
         return ResponseEntity.ok().build();
     }
+
+    /**
+     * 회원의 오늘 AI 상담 사용시간을 조회한다.
+     *
+     * GET /api/chat/usage/user/{userId}
+     */
+    @GetMapping("/usage/user/{userId}")
+    public ResponseEntity<ChatDailyUsageResponse> getUserDailyUsage(
+            @PathVariable Long userId) {
+
+        // 해당 회원이 오늘 이미 사용한 상담시간을 조회한다.
+        int usedSeconds =
+                chatDailyUsageService.getTodayUsedSecondsByUser(userId);
+
+        // 회원에게 제공되는 하루 상담시간 중 남은 시간을 계산한다.
+        int remainingSeconds =
+                chatDailyUsageService.getTodayRemainingSecondsByUser(userId);
+
+        // 프론트에 사용시간과 남은 시간을 반환한다.
+        ChatDailyUsageResponse response =
+                new ChatDailyUsageResponse(
+                        usedSeconds,
+                        remainingSeconds
+                );
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 회원이 사용한 AI 상담시간을 저장한다.
+     *
+     * POST /api/chat/usage/user/{userId}
+     */
+    @PostMapping("/usage/user/{userId}")
+    public ResponseEntity<Void> addUserDailyUsage(
+            @PathVariable Long userId,
+            @RequestBody ChatDailyUsageRequest request) {
+
+        // 해당 회원이 이번에 사용한 상담시간을
+        // 오늘 사용량에 추가한다.
+        chatDailyUsageService.addUsedSecondsByUser(
+                userId,
+                request.getSeconds()
+        );
+
+        return ResponseEntity.ok().build();
+    }
 }

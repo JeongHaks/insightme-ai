@@ -27,4 +27,10 @@ public interface ChatDailyUsageRepository
             UUID guestId,
             LocalDate usageDate
     );
+
+    // 회원 ID와 날짜를 기준으로 오늘 상담 사용시간을 조회한다.
+    Optional<ChatDailyUsage> findByUserIdAndUsageDate(
+            Long userId,
+            LocalDate usageDate
+    );
 }
