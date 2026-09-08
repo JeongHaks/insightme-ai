@@ -73,15 +73,6 @@ export default function TestResult() {
     );
   }
 
-  // NS, HA, RD, SD 점수의 총합
-  const totalScore =
-    result.nsScore +
-    result.haScore +
-    result.rdScore +
-    result.sdScore;
-
-  // 전체 10문항 중 점수 답변과 일치한 비율
-  const temperamentRate = Math.round((totalScore / 10) * 100);
 
   // 기질 유형에 따라 시너지가 좋은 역할 문구를 정한다.
   const synergyRoles =
@@ -153,6 +144,26 @@ export default function TestResult() {
           ? "과도한 경쟁과 감정적인 비난이 반복되고, 구성원 간 신뢰가 낮은 조직은 피하는 것이 좋습니다."
           : "세세한 통제와 보고가 많고, 자율적인 판단이나 의사결정 권한이 거의 없는 조직은 맞지 않을 수 있습니다.";
 
+  // 각 기질의 점수를 최대 점수와 비교해서
+  // 사용자가 이해하기 쉬운 "높음 / 보통 / 낮음"으로 변환한다.
+  const getScoreLevel = (score: number, maxScore: number) => {
+    // 해당 기질의 점수를 백분율로 계산한다.
+    const rate = (score / maxScore) * 100;
+
+    // 67% 이상이면 높은 성향
+    if (rate >= 66) {
+      return "높음";
+    }
+
+    // 34% 이상이면 보통 성향
+    if (rate >= 34) {
+      return "보통";
+    }
+
+    // 그보다 낮으면 낮은 성향
+    return "낮음";
+  };
+
   return (
     // 전체 결과 화면 배경
     <main className="min-h-screen bg-gradient-to-b from-[#F8F6FF] via-[#F2EEFF] to-[#ECE7FF] px-4 py-4">
@@ -163,30 +174,21 @@ export default function TestResult() {
         <div className="pointer-events-none absolute -left-16 bottom-28 h-40 w-40 rounded-full bg-[#F8E9FF]/75 blur-3xl" />
 
         {/* 상단 헤더 */}
-        <header className="relative z-10 flex items-center justify-between px-5 py-5">
-          {/* 이전 화면 이동 */}
+        <header className="relative z-10 flex items-center px-5 py-5">
+          {/* 이전 화면 이동 버튼 */}
           <button
             type="button"
             onClick={() => router.back()}
-            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-2xl bg-white/40 text-xl font-bold text-[#4C426F] backdrop-blur-xl transition hover:bg-white/65"
+            className="relative z-10 flex h-10 w-10 cursor-pointer items-center justify-center rounded-2xl bg-white/40 text-xl font-bold text-[#4C426F] backdrop-blur-xl transition hover:bg-white/65"
             aria-label="이전 화면으로 이동"
           >
             ←
           </button>
 
-          {/* 화면 제목 */}
-          <h1 className="text-base font-black text-[#2B2541]">
+          {/* 화면 가운데에 고정되는 제목 */}
+          <h1 className="absolute left-1/2 -translate-x-1/2 text-base font-black text-[#2B2541]">
             AI 결과 분석
           </h1>
-
-          {/* 메뉴 버튼 */}
-          <button
-            type="button"
-            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-2xl bg-white/40 text-xl font-bold text-[#4C426F] backdrop-blur-xl transition hover:bg-white/65"
-            aria-label="결과 메뉴 열기"
-          >
-            ⋮
-          </button>
         </header>
 
         {/* 현재 회원 / 비회원 상태 표시 */}
@@ -266,69 +268,142 @@ export default function TestResult() {
                   {result.resultType}
                 </p>
 
-                <p className="mt-4 text-sm font-bold leading-7 text-[#7F7895]">
-                  {result.summaryText}
-                </p>
+               
               </article>
               
               {/* 기질별 실제 점수 */}
-              <div className="mt-4 grid grid-cols-4 gap-2">
-                <div className="rounded-xl bg-white/55 px-2 py-3 text-center">
-                  <p className="text-xs font-black text-[#6D55DC]">NS</p>
-                  <p className="mt-1 text-lg font-black text-[#2B2541]">
-                    {result.nsScore}
+              {/* 기질별 점수를 한눈에 볼 수 있는 성향 그래프 */}
+              <article className="mt-4 rounded-[20px] border border-white/75 bg-white/45 p-4 backdrop-blur-2xl">
+                {/* 그래프 제목 */}
+                <div className="mb-4">
+                  <p className="text-sm font-black text-[#2B2541]">
+                    나의 기질 성향
+                  </p>
+                  <p className="mt-1 text-[11px] font-bold text-[#9A93AA]">
+                    각 기질의 성향 정도를 한눈에 확인해보세요.
                   </p>
                 </div>
 
-                <div className="rounded-xl bg-white/55 px-2 py-3 text-center">
-                  <p className="text-xs font-black text-[#6D55DC]">HA</p>
-                  <p className="mt-1 text-lg font-black text-[#2B2541]">
-                    {result.haScore}
-                  </p>
+                {/* NS - 변화추구 */}
+                <div className="mb-4">
+                  <div className="mb-1.5 flex items-center justify-between">
+                    <p className="text-xs font-black text-[#4C426F]">
+                      NS <span className="font-bold text-[#9A93AA]">변화추구</span>
+                    </p>
+
+                    <div className="flex items-center gap-2">
+                      {/* 점수를 사용자가 바로 이해할 수 있도록 수준을 표시한다. */}
+                      <span className="rounded-full bg-[#EEE9FF] px-2 py-1 text-[10px] font-black text-[#6D55DC]">
+                        {getScoreLevel(result.nsScore, 3)}
+                      </span>
+
+                      {/* 실제 점수 / 최대 점수 */}
+                      <p className="text-xs font-black text-[#6D55DC]">
+                        {result.nsScore} / 3
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="h-2.5 overflow-hidden rounded-full bg-[#EAE5F5]">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-[#5B42F3] to-[#9B7BFF] transition-all duration-700"
+                      style={{ width: `${(result.nsScore / 3) * 100}%` }}
+                    />
+                  </div>
                 </div>
 
-                <div className="rounded-xl bg-white/55 px-2 py-3 text-center">
-                  <p className="text-xs font-black text-[#6D55DC]">RD</p>
-                  <p className="mt-1 text-lg font-black text-[#2B2541]">
-                    {result.rdScore}
-                  </p>
+                {/* HA - 위험회피 */}
+                <div className="mb-4">
+                  <div className="mb-1.5 flex items-center justify-between">
+                    <p className="text-xs font-black text-[#4C426F]">
+                      HA <span className="font-bold text-[#9A93AA]">위험회피</span>
+                    </p>
+
+                    <div className="flex items-center gap-2">
+                      <span className="rounded-full bg-[#EEE9FF] px-2 py-1 text-[10px] font-black text-[#6D55DC]">
+                        {getScoreLevel(result.haScore, 3)}
+                      </span>
+
+                      <p className="text-xs font-black text-[#6D55DC]">
+                        {result.haScore} / 3
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="h-2.5 overflow-hidden rounded-full bg-[#EAE5F5]">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-[#5B42F3] to-[#9B7BFF] transition-all duration-700"
+                      style={{ width: `${(result.haScore / 3) * 100}%` }}
+                    />
+                  </div>
                 </div>
 
-                <div className="rounded-xl bg-white/55 px-2 py-3 text-center">
-                  <p className="text-xs font-black text-[#6D55DC]">SD</p>
-                  <p className="mt-1 text-lg font-black text-[#2B2541]">
-                    {result.sdScore}
-                  </p>
+                {/* RD - 사회적 민감성 */}
+                <div className="mb-4">
+                  <div className="mb-1.5 flex items-center justify-between">
+                    <p className="text-xs font-black text-[#4C426F]">
+                      RD <span className="font-bold text-[#9A93AA]">사회적 민감성</span>
+                    </p>
+
+                    <div className="flex items-center gap-2">
+                      <span className="rounded-full bg-[#EEE9FF] px-2 py-1 text-[10px] font-black text-[#6D55DC]">
+                        {getScoreLevel(result.rdScore, 2)}
+                      </span>
+
+                      <p className="text-xs font-black text-[#6D55DC]">
+                        {result.rdScore} / 2
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="h-2.5 overflow-hidden rounded-full bg-[#EAE5F5]">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-[#5B42F3] to-[#9B7BFF] transition-all duration-700"
+                      style={{ width: `${(result.rdScore / 2) * 100}%` }}
+                    />
+                  </div>
                 </div>
-              </div>
+
+                {/* SD - 자율성 */}
+                <div>
+                  <div className="mb-1.5 flex items-center justify-between">
+                    <p className="text-xs font-black text-[#4C426F]">
+                      SD <span className="font-bold text-[#9A93AA]">자율성</span>
+                    </p>
+
+                    <div className="flex items-center gap-2">
+                      <span className="rounded-full bg-[#EEE9FF] px-2 py-1 text-[10px] font-black text-[#6D55DC]">
+                        {getScoreLevel(result.sdScore, 2)}
+                      </span>
+
+                      <p className="text-xs font-black text-[#6D55DC]">
+                        {result.sdScore} / 2
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="h-2.5 overflow-hidden rounded-full bg-[#EAE5F5]">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-[#5B42F3] to-[#9B7BFF] transition-all duration-700"
+                      style={{ width: `${(result.sdScore / 2) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              </article>
 
               {/* 결과 요약 카드 영역 */}
               <div className="grid grid-cols-2 gap-3">
-                {/* 직업 궁합률 */}
-                <article className="rounded-[20px] border border-white/75 bg-white/40 p-4 backdrop-blur-2xl">
-                  <p className="text-xs font-black text-[#6D55DC]">
-                    직업 궁합률
-                  </p>
-
-                   {/* 계산된 기질 점수 비율 */}
-                  <p className="mt-3 text-2xl font-black text-[#2B2541]">
-                    {temperamentRate}%
-                  </p>
-
-                  {/* 계산된 퍼센트만큼 진행 바 너비를 표시한다. */}
-                  <div className="mt-3 h-2 rounded-full bg-[#EAE5F5]">
-                    <div
-                      style={{ width: `${temperamentRate}%` }}
-                      className="h-2 rounded-full bg-gradient-to-r from-[#5B42F3] to-[#B388FF]"
-                    />
-                  </div>
-                </article>
-
                 {/* 추천 직업 방향 */}
                 <article className="rounded-[20px] border border-white/75 bg-white/40 p-4 backdrop-blur-2xl">
-                  <p className="text-xs font-black text-[#6D55DC]">
-                    추천 직업 방향
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#EEE9FF] text-base">
+                      💼
+                    </span>
+
+                    <p className="text-xs font-black text-[#6D55DC]">
+                      추천 직업 방향
+                    </p>
+                  </div>
 
                   <p className="mt-3 text-sm font-black leading-6 text-[#4C426F]">
                     {recommendedCareer}
@@ -337,9 +412,15 @@ export default function TestResult() {
 
                 {/* 시너지 역할 */}
                 <article className="rounded-[20px] border border-white/75 bg-white/40 p-4 backdrop-blur-2xl">
-                  <p className="text-xs font-black text-[#6D55DC]">
-                    시너지가 좋은 역할
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#EEE9FF] text-base">
+                      ✨
+                    </span>
+
+                    <p className="text-xs font-black text-[#6D55DC]">
+                      시너지가 좋은 역할
+                    </p>
+                  </div>
 
                   <p className="mt-3 text-sm font-black leading-6 text-[#4C426F]">
                     {synergyRoles}
@@ -347,10 +428,16 @@ export default function TestResult() {
                 </article>
 
                 {/* 조직문화 */}
-                <article className="rounded-[20px] border border-white/75 bg-white/40 p-4 backdrop-blur-2xl">
-                  <p className="text-xs font-black text-[#6D55DC]">
-                    잘 맞는 조직문화
-                  </p>
+                <article className="col-span-2 rounded-[20px] border border-white/75 bg-white/40 p-4 backdrop-blur-2xl">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#EEE9FF] text-base">
+                      🏢
+                    </span>
+
+                    <p className="text-xs font-black text-[#6D55DC]">
+                      잘 맞는 조직문화
+                    </p>
+                  </div>
 
                   <p className="mt-3 text-sm font-black leading-6 text-[#4C426F]">
                     {recommendedCulture}
@@ -373,32 +460,28 @@ export default function TestResult() {
                   {result.resultType}에게 잘 맞는 일하는 방식
                 </h2>
 
+                {/* 사용자가 긴 분석을 읽기 전에 핵심 직업 방향을 먼저 확인할 수 있도록 표시한다. */}
+                <div className="mt-4 rounded-[16px] bg-[#EEE9FF]/70 px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">💼</span>
+
+                    <p className="text-[11px] font-black text-[#6D55DC]">
+                      추천 커리어 키워드
+                    </p>
+                  </div>
+
+                  <p className="mt-2 text-sm font-black leading-6 text-[#4C426F]">
+                    {recommendedCareer}
+                  </p>
+                </div>
+
                 <p className="mt-4 text-sm font-bold leading-7 text-[#7F7895]">
                   {result.careerAnalysis}
                 </p>
               </article>
 
-              {/* 핵심 업무 강점 */}
-              <article className="rounded-[20px] border border-white/75 bg-white/35 p-4 backdrop-blur-2xl">
-                <p className="text-xs font-black text-[#6D55DC]">
-                  핵심 업무 강점
-                </p>
+              
 
-                <p className="mt-3 text-sm font-black leading-7 text-[#4C426F]">
-                  {result.summaryText}
-                </p>
-              </article>
-
-              {/* 추천 직업 방향 */}
-              <article className="rounded-[20px] border border-white/75 bg-white/35 p-4 backdrop-blur-2xl">
-                <p className="text-xs font-black text-[#6D55DC]">
-                  추천 직업 방향
-                </p>
-
-                <p className="mt-3 text-sm font-black leading-7 text-[#4C426F]">
-                  {recommendedCareer}
-                </p>
-              </article>
             </div>
           )}
 
@@ -422,27 +505,38 @@ export default function TestResult() {
 
               {/* 번아웃 신호 */}
               <article className="rounded-[20px] border border-white/75 bg-white/35 p-4 backdrop-blur-2xl">
-                <p className="text-xs font-black text-[#6D55DC]">
-                  {burnoutWarning}
-                </p>
+                {/* 번아웃 위험 신호를 시각적으로 구분한다. */}
+                <div className="flex items-center gap-2">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#FFF0EE] text-base">
+                    ⚠️
+                  </span>
+
+                  <p className="text-xs font-black text-[#D2675A]">
+                    번아웃 위험 신호
+                  </p>
+                </div>
 
                 <p className="mt-3 text-sm font-black leading-7 text-[#4C426F]">
-                  작은 실수에도 자책이 커지고, 사람과의 대화가 줄어들며,
-                  일을 시작하기 전부터 피로감을 느낄 수 있습니다.
+                  {burnoutWarning}
                 </p>
               </article>
 
               {/* 회복 방법 */}
               <article className="rounded-[20px] border border-white/75 bg-white/35 p-4 backdrop-blur-2xl">
-                <p className="text-xs font-black text-[#6D55DC]">
-                  {burnoutRecovery}
-                </p>
+                {/* 번아웃 회복 방법을 시각적으로 구분한다. */}
+                <div className="flex items-center gap-2">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#EEFAF3] text-base">
+                    🌱
+                  </span>
+
+                  <p className="text-xs font-black text-[#4F9B72]">
+                    회복을 위한 방법
+                  </p>
+                </div>
 
                 <p className="mt-3 text-sm font-black leading-7 text-[#4C426F]">
-                  업무 범위를 명확히 나누고, 완벽한 해결보다 우선순위를
-                  정해 처리하세요. 혼자 고민하는 시간을 줄이고 중간
-                  피드백을 요청하는 것이 도움이 됩니다.
-                </p>
+                  {burnoutRecovery}
+                </p>             
               </article>
             </div>
           )}
@@ -467,27 +561,41 @@ export default function TestResult() {
 
               {/* 선호하는 소통 방식 */}
               <article className="rounded-[20px] border border-white/75 bg-white/35 p-4 backdrop-blur-2xl">
-                <p className="text-xs font-black text-[#6D55DC]">
-                  {preferredCommunication}
-                </p>
+                {/* 선호하는 소통 방식을 시각적으로 구분한다. */}
+                <div className="flex items-center gap-2">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#EEE9FF] text-base">
+                    💬
+                  </span>
 
+                  <p className="text-xs font-black text-[#6D55DC]">
+                    선호하는 소통 방식
+                  </p>
+                </div>
+
+                {/* 사용자 성향에 맞는 실제 분석 내용 */}
                 <p className="mt-3 text-sm font-black leading-7 text-[#4C426F]">
-                  감정적인 압박보다 근거와 목적이 분명한 대화를 선호하고,
-                  일방적인 지시보다 의견을 교환하는 방식에서 안정감을
-                  느낍니다.
+                  {preferredCommunication}
                 </p>
               </article>
 
               {/* 피해야 할 조직문화 */}
               <article className="rounded-[20px] border border-white/75 bg-white/35 p-4 backdrop-blur-2xl">
-                <p className="text-xs font-black text-[#6D55DC]">
+                {/* 피해야 할 조직문화를 시각적으로 구분한다. */}
+                <div className="flex items-center gap-2">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#FFF0EE] text-base">
+                    🚫
+                  </span>
+
+                  <p className="text-xs font-black text-[#D2675A]">
+                    피해야 할 조직문화
+                  </p>
+                </div>
+
+                {/* 사용자 성향에 따른 실제 분석 내용 */}
+                <p className="mt-3 text-sm font-black leading-7 text-[#4C426F]">
                   {avoidCulture}
                 </p>
 
-                <p className="mt-3 text-sm font-black leading-7 text-[#4C426F]">
-                  역할과 책임이 계속 바뀌거나, 기준 없이 감정적으로
-                  평가하는 환경에서는 스트레스가 커질 수 있습니다.
-                </p>
               </article>
             </div>
           )}
@@ -513,7 +621,7 @@ export default function TestResult() {
 
           {/* 하단 설명 */}
           <p className="mt-3 text-center text-xs font-bold text-[#9A93AA]">
-            채팅형으로 결과를 단계별 확인 가능
+            AI에게 내 결과에 대해 더 자세히 물어볼 수 있어요
           </p>
         </footer>
       </section>
